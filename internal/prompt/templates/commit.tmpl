@@ -1,0 +1,33 @@
+You are writing a git commit message for the staged changes shown below.
+
+Rules:
+- Conventional Commits: "type(scope): description". The scope is optional.
+- Allowed types: {{ .Types }}. Pick exactly one.
+- Write the description in {{ .Language }}, imperative mood, no trailing period.
+- The subject line must be at most {{ .SubjectMaxLength }} characters, type and scope included.
+{{- if eq .Body "never" }}
+- Subject line only. Do not add a body.
+{{- else if eq .Body "always" }}
+- Always add a body: one blank line after the subject, then short "- " bullets.
+{{- else }}
+- Add a body only when the change has several distinct parts: one blank line after the subject, then short "- " bullets.
+{{- end }}
+- Describe what the change does, not which files moved.
+- One message only: no alternatives, no explanations, no notes, no character counts, no co-authors, no footers.
+- Reply with ONLY the final message, wrapped exactly in <commit> and </commit>.
+{{- if .Instructions }}
+
+## Project conventions
+These come from the repository and take precedence over the generic rules above.
+
+{{ .Instructions }}
+{{- end }}
+
+## Files changed
+{{ .Stat }}
+{{- if .Excluded }}
+Changed but not shown below (excluded by configuration): {{ .Excluded }}
+{{- end }}
+
+## Diff{{ if .Truncated }} (truncated to {{ .MaxDiffChars }} characters){{ end }}
+{{ .Diff }}

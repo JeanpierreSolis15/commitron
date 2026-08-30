@@ -1,0 +1,5 @@
+/commitron
+/commitron.exe
+/dist/
+*.test
+*.out
