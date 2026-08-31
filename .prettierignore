@@ -1,0 +1,6 @@
+dist/
+docs/
+.github/
+*.md
+schema.json
+package-lock.json

@@ -49,6 +49,12 @@
       "description": "Commit types the model may use. A reply with any other type is rejected.",
       "default": ["feat", "fix", "refactor", "perf", "docs", "test", "build", "ci", "chore", "style", "revert"]
     },
+    "scopes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Scopes the model may use, like commitlint's scope-enum. Empty means any. A reply with a scope outside the list is rejected; a reply with no scope is fine."
+    },
     "subjectMaxLength": {
       "type": "integer",
       "minimum": 20,
@@ -89,9 +95,26 @@
       "description": "Git pathspecs kept out of the diff. Lockfiles are excluded by default so they cannot eat the whole budget; the files still show up in the file list.",
       "default": ["pnpm-lock.yaml", "package-lock.json", "yarn.lock", "bun.lockb", "*.lock", "*.snap"]
     },
+    "guidelines": {
+      "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }],
+      "default": [],
+      "description": "Your own rules, one per entry, such as \"prefix the description with the Jira ticket from the branch name\". They go into the prompt above the generic rules."
+    },
+    "examples": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Commit messages from this project the model should imitate, subject and body included."
+    },
+    "history": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 10,
+      "description": "How many recent commits of the repository to show the model as style examples. 0 turns it off."
+    },
     "instructions": {
       "type": ["string", "null"],
-      "description": "Path to a Markdown file with this project's commit conventions, relative to the repository root. Its content takes precedence over the generic rules."
+      "description": "Optional path to a Markdown file with this project's commit conventions, such as an existing CONTRIBUTING.md, relative to the repository root. Its content joins the guidelines above the generic rules."
     },
     "instructionsMaxChars": {
       "type": "integer",
