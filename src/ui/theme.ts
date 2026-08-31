@@ -1,4 +1,5 @@
-import type { Mode } from "../config";
+import type { Mode } from "../domain/config";
+import type { Capabilities } from "./terminal";
 
 export const reset = "\x1b[0m";
 export const cursorHide = "\x1b[?25l";
@@ -32,9 +33,9 @@ export class Theme {
   readonly glyph: Glyphs;
   readonly frames: string[];
 
-  constructor(colorMode: Mode, unicodeMode: Mode) {
-    this.color = resolve(colorMode, autoColor);
-    const unicode = resolve(unicodeMode, autoUnicode);
+  constructor(colorMode: Mode, unicodeMode: Mode, supports: Capabilities) {
+    this.color = resolve(colorMode, supports.color);
+    const unicode = resolve(unicodeMode, supports.unicode);
     this.glyph = unicode ? unicodeGlyphs : asciiGlyphs;
     this.frames = unicode ? unicodeFrames : asciiFrames;
   }
@@ -71,49 +72,15 @@ export class Theme {
   }
 }
 
-function resolve(mode: Mode, auto: () => boolean): boolean {
+function resolve(mode: Mode, auto: boolean): boolean {
   switch (mode) {
     case "always":
       return true;
     case "never":
       return false;
     default:
-      return auto();
+      return auto;
   }
-}
-
-function autoColor(): boolean {
-  if (process.env.NO_COLOR) {
-    return false;
-  }
-  if (process.env.TERM === "dumb") {
-    return false;
-  }
-  return isTerminal(process.stderr);
-}
-
-function autoUnicode(): boolean {
-  if (process.platform === "win32") {
-    return Boolean(process.env.WT_SESSION || process.env.TERM_PROGRAM || process.env.MSYSTEM);
-  }
-  for (const key of ["LC_ALL", "LC_CTYPE", "LANG"]) {
-    const value = (process.env[key] ?? "").toLowerCase();
-    if (value.includes("utf-8") || value.includes("utf8")) {
-      return true;
-    }
-  }
-  return false;
-}
-
-export function isTerminal(stream: NodeJS.ReadStream | NodeJS.WriteStream): boolean {
-  if (stream.isTTY) {
-    return true;
-  }
-  return (
-    process.platform === "win32" &&
-    process.env.TERM_PROGRAM === "mintty" &&
-    stream !== process.stdout
-  );
 }
 
 function fg(hex: string): string {
