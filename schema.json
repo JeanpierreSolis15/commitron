@@ -37,6 +37,11 @@
       "default": true,
       "description": "Skip the project's MCP servers. Writing a commit message needs no tools, so this keeps the call fast and cheap."
     },
+    "isolated": {
+      "type": "boolean",
+      "default": true,
+      "description": "Run claude with no tools, no settings and no CLAUDE.md, from an empty directory, so the message depends only on the staged diff and this config. Set to false to let Claude Code load your project context as usual."
+    },
     "extraArgs": {
       "type": "array",
       "items": { "type": "string" },

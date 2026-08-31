@@ -114,6 +114,7 @@ function generationRequest(config: Config, prompt: string): GenerationRequest {
     model: config.model,
     fallbackModel: config.fallbackModel ?? "",
     strictMcpConfig: config.strictMcpConfig,
+    isolated: config.isolated,
     extraArgs: config.extraArgs ?? [],
     timeoutSeconds: config.timeoutSeconds,
   };

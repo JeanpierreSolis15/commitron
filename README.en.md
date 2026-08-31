@@ -216,13 +216,18 @@ have nothing left to complain about.
 
 1. reads `git diff --cached`, minus the excluded paths, and your latest commits
 2. renders a prompt with your config, your conventions and those examples
-3. pipes it to `claude -p --model <model> --strict-mcp-config`
+3. pipes it to `claude -p --model <model> --tools "" --setting-sources ""
+   --no-session-persistence --strict-mcp-config`, run from an empty directory
 4. unwraps, parses and validates the reply
 5. shows it and commits with `git commit -F`
 
-`claude` runs as a direct child process, so a timeout kills the real thing. The
-diff never leaves your machine by any path other than the Claude Code CLI you
-already trust with it.
+Step 3 isolates the call on purpose: no tools, no `CLAUDE.md` (neither the
+project's nor yours), no hooks, no MCP and no session written to disk. The model
+sees the prompt and nothing else, so the message depends on the staged diff and
+your config alone; `"isolated": false` turns that off if you would rather have
+Claude Code load your project context as usual. `claude` runs as a direct child
+process, so a timeout kills the real thing. The diff never leaves your machine
+by any path other than the Claude Code CLI you already trust with it.
 
 ## Contributing
 
