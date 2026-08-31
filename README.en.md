@@ -3,7 +3,7 @@
 [![CI](https://github.com/JeanpierreSolis15/commitron/actions/workflows/ci.yml/badge.svg)](https://github.com/JeanpierreSolis15/commitron/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/JeanpierreSolis15/commitron?sort=semver)](https://github.com/JeanpierreSolis15/commitron/releases)
 [![npm](https://img.shields.io/npm/v/%40deadgun15%2Fcommitron)](https://www.npmjs.com/package/@deadgun15/commitron)
-[![Go](https://img.shields.io/github/go-mod/go-version/JeanpierreSolis15/commitron)](go.mod)
+[![Node](https://img.shields.io/node/v/%40deadgun15%2Fcommitron)](package.json)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 [Español](README.md) · English
@@ -21,13 +21,14 @@ already have. No API key, no account to create, nothing to pay for twice: if
   as it is.
 - **Knows your project.** Point it at a `CONTRIBUTING.md` and its rules outrank
   the generic ones.
-- **Any language, any repository.** A single static binary with no runtime
+- **Any language, any repository.** All it needs is Node, and it pulls in no
   dependencies. It reads `git`, not `package.json`.
 - **Your words, your call.** It shows the message, you confirm, edit or cancel.
   Nothing is committed behind your back.
 
 ## Requirements
 
+- [Node.js](https://nodejs.org) 20 or newer
 - [git](https://git-scm.com)
 - the [Claude Code CLI](https://claude.com/claude-code) on your PATH and logged
   in. commitron runs `claude -p` under the hood, so it uses the subscription you
@@ -35,12 +36,9 @@ already have. No API key, no account to create, nothing to pay for twice: if
 
 ## Install
 
-### npm
-
-Works on macOS, Linux and Windows with Node 18 or newer. On the first run it
-downloads the binary for your platform from the GitHub release and verifies its
-checksum. There are no install scripts, so it works the same with npm 12 and
-with `--ignore-scripts`.
+Works on macOS, Linux and Windows. It is plain JavaScript: no binary downloads
+and no install scripts, so it works the same with `--ignore-scripts` and on
+Windows with Smart App Control turned on.
 
 ```sh
 npm install -g @deadgun15/commitron
@@ -68,29 +66,13 @@ The installed command is called `commitron` in all three cases.
 }
 ```
 
-### macOS / Linux
+### Coming from 0.1.x
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/JeanpierreSolis15/commitron/main/install.sh | sh
-```
-
-### Windows
-
-```powershell
-irm https://raw.githubusercontent.com/JeanpierreSolis15/commitron/main/install.ps1 | iex
-```
-
-### Go
-
-```sh
-go install github.com/JeanpierreSolis15/commitron@latest
-```
-
-### Binaries
-
-Every release ships binaries for Linux, macOS and Windows on amd64 and arm64,
-with a `checksums.txt`, on the
-[releases page](https://github.com/JeanpierreSolis15/commitron/releases).
+Up to 0.1.3 commitron was a compiled Go binary. If you installed it with
+`install.sh`, `install.ps1` or `go install`, that binary is still on your PATH
+and will not update itself: delete it (`~/.local/bin/commitron`,
+`/usr/local/bin/commitron` or `%LOCALAPPDATA%\Programs\commitron`) and install
+with npm. Your `.commitron.json` works unchanged.
 
 ## Use
 
@@ -211,14 +193,14 @@ have nothing left to complain about.
 ## How it works
 
 1. reads `git diff --cached`, minus the excluded paths
-2. renders a prompt from a template with your config and conventions
+2. renders a prompt with your config and conventions
 3. pipes it to `claude -p --model <model> --strict-mcp-config`
 4. unwraps, parses and validates the reply
 5. shows it and commits with `git commit -F`
 
-No shell is ever spawned, so a timeout kills the real process, and there is
-nothing to quote or escape. The diff never leaves your machine by any path other
-than the Claude Code CLI you already trust with it.
+`claude` runs as a direct child process, so a timeout kills the real thing. The
+diff never leaves your machine by any path other than the Claude Code CLI you
+already trust with it.
 
 ## Contributing
 
@@ -228,8 +210,8 @@ Issues and pull requests are welcome. The short version:
   Branch from `develop`, open your pull request against `develop`.
 - Commit messages follow Conventional Commits. commitron writes its own, so
   `commitron` in this repository is the expected workflow.
-- CI runs the suite on Linux, macOS and Windows; `go test ./...` and `gofmt -l .`
-  must be clean before a merge.
+- CI runs the suite on Linux, macOS and Windows; `npm test`, `npm run lint` and
+  `npm run format:check` must be clean before a merge.
 
 [CONTRIBUTING.en.md](CONTRIBUTING.en.md) has the full guide: repository layout,
 how to run everything locally, the branch model and how a release is cut.

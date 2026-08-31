@@ -9,59 +9,59 @@ release is cut.
 ## Repository layout
 
 ```
-main.go                     entry point
-internal/cli                flags, subcommands, exit codes
-internal/config             settings, defaults, layered loading, validation
-internal/gitx               the git commands commitron needs
-internal/message            sanitising, parsing and validating the reply
-internal/prompt             the prompt template and its rendering
-internal/provider           the Claude Code CLI backend
-internal/ui                 colours, glyphs, spinner, prompts
-npm/                        the npm package: a launcher that downloads the binary
+src/main.ts                 entry point
+src/cli.ts                  flags, subcommands, exit codes
+src/init.ts                 commitron init and commitron config
+src/run.ts                  the commit flow from start to finish
+src/config.ts               settings, defaults, validation
+src/load.ts                 layered config loading
+src/git.ts                  the git commands commitron needs
+src/message.ts              sanitising, parsing and validating the reply
+src/normalize.ts            canonical message shape and body wrapping
+src/prompt.ts               the prompt and its rendering
+src/provider.ts             the Claude Code CLI backend
+src/ui/                     colours, glyphs, spinner, prompts
+test/                       the test suite (vitest)
 schema.json                 JSON Schema for .commitron.json
-install.sh, install.ps1     one-line installers for the release binaries
-.goreleaser.yaml            release build matrix and archives
+tsup.config.ts              bundles src/ into dist/cli.js
 ```
 
-Go code has no third-party dependencies and is written without comments; names
-and small functions carry the meaning. Keep it that way.
+The code has no runtime dependencies and is written without comments; names and
+small functions carry the meaning. Keep it that way.
 
 ## Running things locally
 
-You need Go 1.23 or newer and git. The Claude Code CLI is only needed to run
+You need Node 20 or newer and git. The Claude Code CLI is only needed to run
 commitron end to end; the test suite does not call it.
 
 ```sh
-go build ./...
-go vet ./...
-gofmt -l .
-go test ./... -count=1
+npm ci
+npm run typecheck
+npm run lint
+npm run format:check
+npm test
+npm run build
 ```
+
+`npm run format` applies Prettier; CI fails on anything left unformatted.
 
 To try a change for real, build and run it against this repository:
 
 ```sh
-go build -o commitron .
+npm run build
 git add -p
-./commitron --dry-run
+node dist/cli.js --dry-run
 ```
 
-### The npm package
+`npm link` makes this checkout's `commitron` command available system-wide;
+`npm unlink -g @deadgun15/commitron` removes it again.
 
-`npm/` holds a small Node launcher. On the first run, `bin/commitron.js`
-downloads the release binary for the current platform from GitHub
-(`lib/download.js`), checks it against `checksums.txt` and runs it. There are no
-install scripts: npm 12 no longer runs them by default. To exercise the launcher
-without a release, put a local build where the download would:
+### The package
 
-```sh
-mkdir -p npm/vendor
-go build -o npm/vendor/commitron .        # commitron.exe on Windows
-node npm/bin/commitron.js version         # prints: dev
-```
-
-`npm/package.json` keeps the version `0.0.0-dev`; the release workflow sets the
-real one from the tag. Do not bump it by hand.
+`npm pack --dry-run` shows exactly what gets published: `dist/cli.js`,
+`schema.json`, the READMEs and the license. `package.json` keeps the version
+`0.0.0-dev`; the release workflow sets the real one from the tag. Do not bump it
+by hand.
 
 ## Branches
 
@@ -73,7 +73,7 @@ real one from the tag. Do not bump it by hand.
 1. Branch from `develop`: `git switch -c feat/short-name develop`.
 2. Commit with Conventional Commits. Use commitron itself.
 3. Open a pull request against `develop`. CI must be green: tests on Linux,
-   macOS and Windows, `gofmt`, `goreleaser check` and the npm package check.
+   macOS and Windows, lint and the npm package check.
 4. When `develop` is ready to ship, a maintainer opens a pull request from
    `develop` to `main`, merges it and tags the release.
 
@@ -92,9 +92,9 @@ type(scope): description
 ```
 
 Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
-`chore`, `style`, `revert`. The scope is the package touched (`cli`, `config`,
-`gitx`, `message`, `prompt`, `provider`, `ui`, `npm`) or `ci`, `docs`,
-`release`. `feat` and `fix` commits are what end up in the release notes.
+`chore`, `style`, `revert`. The scope is the module touched (`cli`, `config`,
+`git`, `message`, `prompt`, `provider`, `ui`) or `ci`, `docs`, `release`,
+`deps`. `feat` and `fix` commits are what end up in the release notes.
 
 ## Releases
 
@@ -109,11 +109,13 @@ git push origin v1.2.3
 
 The Release workflow then:
 
-1. builds the binaries for Linux, macOS and Windows on amd64 and arm64;
-2. uploads the archives, the bare binaries and `checksums.txt` to a GitHub
-   release with a changelog grouped by type;
-3. publishes `@deadgun15/commitron@1.2.3` to npm with provenance. A pre-release tag such as
-   `v1.3.0-rc.1` is published under the npm dist-tag `next` instead of `latest`.
+1. installs the dependencies, runs the suite and builds `dist/cli.js`;
+2. sets the tag's version in `package.json` and publishes
+   `@deadgun15/commitron@1.2.3` to npm with provenance. A pre-release tag such
+   as `v1.3.0-rc.1` is published under the npm dist-tag `next` instead of
+   `latest`;
+3. creates the GitHub release with notes generated from the pull requests and
+   attaches the package `.tgz`.
 
 ### One-time setup for maintainers
 
@@ -127,15 +129,11 @@ The Release workflow then:
 - **Package name.** It is `@deadgun15/commitron`: the scope is the maintainer's
   npm username, because the unscoped name `commitron` belongs to another
   account. The installed command is still `commitron` (`bin` in
-  `npm/package.json`).
-- **Homebrew and Scoop** are not set up. GoReleaser supports them through the
-  `brews` and `scoops` sections of `.goreleaser.yaml`; they need a
-  `homebrew-tap` and a `scoop-bucket` repository under the same account and a
-  PAT with write access to them stored as a secret, because the workflow's
-  `GITHUB_TOKEN` cannot push to other repositories.
+  `package.json`).
 
 ## Reporting problems
 
-Open an issue with the commitron version (`commitron version`), your OS, the
-command you ran and what you expected. `commitron --dry-run` output and your
-`.commitron.json` help a lot. Never paste a diff you cannot share.
+Open an issue with the commitron version (`commitron version`), your Node
+version (`node --version`), your OS, the command you ran and what you expected.
+`commitron --dry-run` output and your `.commitron.json` help a lot. Never paste
+a diff you cannot share.
