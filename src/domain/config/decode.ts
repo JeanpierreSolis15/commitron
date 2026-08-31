@@ -8,6 +8,7 @@ const fields: Record<ConfigKey, Kind> = {
   model: "string",
   fallbackModel: "string",
   timeoutSeconds: "integer",
+  retries: "integer",
   strictMcpConfig: "boolean",
   extraArgs: "strings",
   language: "string",

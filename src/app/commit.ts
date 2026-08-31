@@ -2,7 +2,7 @@ import type { Config } from "../domain/config";
 import { errorMessage } from "../utils/errors";
 import { resolveConfig, type ConfigOverrides } from "./config";
 import { Cancelled, fail, GitMissingError } from "./errors";
-import { generateMessage } from "./generate";
+import { generateMessage, type Generated } from "./generate";
 import { offerInit } from "./init";
 import type { Dependencies, Presenter, Stats } from "./ports";
 
@@ -41,12 +41,15 @@ export async function commitStaged(
     progress.end();
   }
 
-  presenter.message(generated.text, generated.parsed, generated.warnings);
+  presenter.message(generated.text, generated.parsed, [
+    ...generated.notices,
+    ...generated.warnings,
+  ]);
   if (command.dryRun) {
     presenter.dryRun();
     return;
   }
-  await commit(deps, presenter, config, command, generated.text, signal);
+  await commit(deps, presenter, config, command, generated, signal);
 }
 
 function requireRepoRoot(deps: Dependencies): string {
@@ -85,11 +88,18 @@ async function commit(
   presenter: Presenter,
   config: Config,
   command: CommitCommand,
-  text: string,
+  generated: Generated,
   signal: AbortSignal,
 ): Promise<void> {
   let edit = command.edit;
-  if (config.confirm && !command.yes) {
+  const unattended = !config.confirm || command.yes;
+  if (unattended && generated.warnings.length > 0) {
+    throw fail(
+      "the message still breaks your rules and nobody is confirming it",
+      `${generated.warnings.join("\n")}\n\nreview it with --dry-run, or commit it after confirming it yourself`,
+    );
+  }
+  if (!unattended) {
     switch (await presenter.confirm(signal)) {
       case "no":
         throw new Cancelled();
@@ -106,7 +116,7 @@ async function commit(
 
   let sha: string;
   try {
-    sha = deps.git.commit(text, { edit, verify: config.verify });
+    sha = deps.git.commit(generated.text, { edit, verify: config.verify });
   } catch (err) {
     throw fail("git refused the commit", errorMessage(err));
   }

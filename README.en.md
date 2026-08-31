@@ -92,7 +92,7 @@ for you:
 |---|---|
 | `-m, --model <name>` | model for this run (`sonnet`, `opus`, `haiku` or a full model id) |
 | `-e, --edit` | open the message in your git editor before committing |
-| `-y, --yes` | skip the confirmation |
+| `-y, --yes` | skip the confirmation; if the message still breaks a rule, nothing is committed |
 | `--dry-run` | print the message and stop |
 | `--config <path>` | load an extra config file on top |
 | `--no-verify` | skip git hooks |
@@ -171,6 +171,9 @@ rather than a silent no-op. A JavaScript project can keep everything in
 - **`types`** — the types the model may use. A reply with anything else is
   rejected instead of committed.
 - **`model`** and **`timeoutSeconds`** — which model answers and how long to wait.
+- **`retries`** — how many times the model is asked to fix a reply that breaks a
+  rule (subject too long, leading capital, missing body…) before you see it. 1
+  by default; `0` shows the first reply as it is.
 
 Run `commitron init --full` to see every key with its default.
 
@@ -196,6 +199,12 @@ The split is deliberate: a fix that is purely mechanical is applied without
 asking, and anything that needs judgement is left to you. Lowercasing `Feat:` is
 safe; lowercasing `OAuth` is not.
 
+When a reply leaves a warning behind, commitron hands it back to the model with
+the list of problems and asks for a corrected one (`retries`, 1 by default). If
+any warning remains after that, in interactive mode you see it next to the
+message and decide; with `--yes` or `"confirm": false` nothing is committed,
+because nobody is going to review it.
+
 commitron does not replace commitlint. With `verify: true` (the default) your own
 `commit-msg` hook still runs and has the last word — the point is that it should
 have nothing left to complain about.
@@ -216,8 +225,9 @@ already trust with it.
 
 Issues and pull requests are welcome. The short version:
 
-- `main` is production and only moves by release; `develop` is where work lands.
-  Branch from `develop`, open your pull request against `develop`.
+- `main` is production: every merge from `develop` publishes a new version,
+  worked out from the commits. `develop` is where work lands: branch from there
+  and open your pull request against `develop`.
 - Commit messages follow Conventional Commits. commitron writes its own, so
   `commitron` in this repository is the expected workflow.
 - CI runs the suite on Linux, macOS and Windows; `npm test`, `npm run lint` and

@@ -5,6 +5,7 @@ export const keyOrder: ConfigKey[] = [
   "model",
   "fallbackModel",
   "timeoutSeconds",
+  "retries",
   "strictMcpConfig",
   "extraArgs",
   "language",

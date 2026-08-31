@@ -7,6 +7,9 @@ export function validateConfig(c: Config): void {
   if (c.timeoutSeconds < 5) {
     throw new Error(`timeoutSeconds: ${c.timeoutSeconds} is too low, use at least 5`);
   }
+  if (c.retries < 0) {
+    throw new Error("retries: cannot be negative");
+  }
   if (c.language === "") {
     throw new Error("language: cannot be empty");
   }
