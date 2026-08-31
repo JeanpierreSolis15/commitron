@@ -11,6 +11,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,6 +33,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
+        if: env.NPM_TOKEN != ''
         with:
           node-version: '22'
           registry-url: https://registry.npmjs.org
@@ -39,6 +42,7 @@ jobs:
       # from the GitHub release, so the assets must already be there.
       # Needs the NPM_TOKEN repository secret (an npm automation token).
       - name: Publish to npm
+        if: env.NPM_TOKEN != ''
         working-directory: npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -49,3 +53,7 @@ jobs:
           cp ../README.md ../LICENSE .
           npm version --no-git-tag-version "$version"
           npm publish --access public --provenance --tag "$tag"
+
+      - name: Report the skipped npm publish
+        if: env.NPM_TOKEN == ''
+        run: echo "::warning::NPM_TOKEN is not set, so this release was not published to npm. Add the secret and re-run this job."
