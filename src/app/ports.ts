@@ -27,6 +27,7 @@ export interface GenerationRequest {
   model: string;
   fallbackModel: string;
   strictMcpConfig: boolean;
+  isolated: boolean;
   extraArgs: string[];
   timeoutSeconds: number;
 }

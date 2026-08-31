@@ -10,6 +10,7 @@ const fields: Record<ConfigKey, Kind> = {
   timeoutSeconds: "integer",
   retries: "integer",
   strictMcpConfig: "boolean",
+  isolated: "boolean",
   extraArgs: "strings",
   language: "string",
   types: "strings",

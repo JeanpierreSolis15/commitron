@@ -97,6 +97,11 @@ export function buildPrompt(config: Config, input: PromptInput): string {
     `## Diff${truncated ? ` (truncated to ${config.maxDiffChars} characters)` : ""}`,
     diff,
     "",
+    "## Reminder",
+    `- The description is written in ${languageName(config.language)}, whatever language the`,
+    "  examples or the diff use.",
+    "- One message only, wrapped exactly in <commit> and </commit>.",
+    "",
   );
   return lines.join("\n");
 }
@@ -135,7 +140,8 @@ function addExamples(add: Add, config: Config, input: PromptInput): void {
   if (examples.length > 0) {
     add(
       "Match the shape and tone of these messages from this repository when they follow",
-      "the rules above; where they disagree, the rules win.",
+      "the rules above; where they disagree, the rules win. In particular, write the",
+      `description in ${languageName(config.language)} even if they use another language.`,
     );
   } else {
     add("Two messages with the expected shape:");

@@ -219,13 +219,20 @@ es que no le quede nada de lo que quejarse.
 
 1. lee `git diff --cached`, sin las rutas excluidas, y tus últimos commits
 2. renderiza un prompt con tu configuración, tus convenciones y esos ejemplos
-3. se lo pasa por pipe a `claude -p --model <model> --strict-mcp-config`
+3. se lo pasa por pipe a `claude -p --model <model> --tools "" --setting-sources ""
+   --no-session-persistence --strict-mcp-config`, ejecutado desde un directorio
+   vacío
 4. desenvuelve, parsea y valida la respuesta
 5. lo muestra y commitea con `git commit -F`
 
-`claude` se ejecuta como proceso hijo directo, así que un timeout mata el proceso
-real. El diff no sale de tu máquina por ningún camino que no sea la CLI de Claude
-Code en la que ya confías.
+El paso 3 aísla la llamada a propósito: sin herramientas, sin `CLAUDE.md` (ni el
+del proyecto ni el tuyo), sin hooks, sin MCP y sin guardar la sesión en disco. El
+modelo solo ve el prompt, así que el mensaje depende del diff staged y de tu
+configuración, y de nada más; `"isolated": false` lo desactiva si prefieres que
+Claude Code cargue el contexto del proyecto como de costumbre. `claude` se
+ejecuta como proceso hijo directo, así que un timeout mata el proceso real. El
+diff no sale de tu máquina por ningún camino que no sea la CLI de Claude Code en
+la que ya confías.
 
 ## Contribuir
 
