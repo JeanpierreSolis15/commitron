@@ -16,6 +16,7 @@ export interface Config {
   model: string;
   fallbackModel?: string;
   timeoutSeconds: number;
+  retries: number;
   strictMcpConfig: boolean;
   extraArgs?: string[];
   language: string;
@@ -45,6 +46,7 @@ export function defaults(): Config {
   return {
     model: "sonnet",
     timeoutSeconds: 120,
+    retries: 1,
     strictMcpConfig: true,
     language: "en",
     types: [

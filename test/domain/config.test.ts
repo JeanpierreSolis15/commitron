@@ -110,6 +110,13 @@ describe("the new defaults", () => {
     expect(defaults().history).toBe(10);
     expect(() => validateConfig({ ...defaults(), history: -1 })).toThrow(/history/);
   });
+
+  it("retry once and reject a negative or non-integer retries", () => {
+    expect(defaults().retries).toBe(1);
+    expect(decodeConfig(defaults(), `{"retries":3}`).retries).toBe(3);
+    expect(() => validateConfig({ ...defaults(), retries: -1 })).toThrow(/retries/);
+    expect(() => decodeConfig(defaults(), `{"retries":"1"}`)).toThrow(/retries/);
+  });
 });
 
 describe("serialize", () => {

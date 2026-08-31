@@ -87,13 +87,15 @@ export class FakeGit implements GitClient {
 export class FakeProvider implements Provider {
   readonly requests: GenerationRequest[] = [];
   reply: string | Error = "<commit>feat: add the thing</commit>";
+  replies: (string | Error)[] = [];
 
   async generate(request: GenerationRequest): Promise<string> {
     this.requests.push(request);
-    if (this.reply instanceof Error) {
-      throw this.reply;
+    const next = this.replies.length > 0 ? this.replies.shift()! : this.reply;
+    if (next instanceof Error) {
+      throw next;
     }
-    return this.reply;
+    return next;
   }
 }
 

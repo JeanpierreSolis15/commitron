@@ -105,11 +105,71 @@ describe("generateMessage", () => {
     ).resolves.toMatchObject({ text: "feat: add the thing" });
   });
 
-  it("warns about missing instructions but carries on", async () => {
+  it("notes a missing instructions file but carries on", async () => {
     const w = world();
     const config = { ...defaults(), instructions: "missing.md" };
     const out = await generateMessage(w.deps, root, config, status, signal());
-    expect(out.warnings).toEqual([expect.stringContaining("not found")]);
+    expect(out.notices).toEqual([expect.stringContaining("not found")]);
+    expect(out.warnings).toEqual([]);
+  });
+
+  it("asks the model to fix a reply that breaks a rule", async () => {
+    const w = world();
+    const long = `feat: ${"x".repeat(100)}`;
+    w.provider.replies = [`<commit>${long}</commit>`, "<commit>feat: add the thing</commit>"];
+    const out = await generateMessage(w.deps, root, defaults(), status, signal());
+    expect(out.text).toBe("feat: add the thing");
+    expect(out.warnings).toEqual([]);
+    expect(w.provider.requests).toHaveLength(2);
+    const revision = w.provider.requests[1]?.prompt ?? "";
+    expect(revision).toContain("## Previous attempt");
+    expect(revision).toContain(`<previous>\n${long}\n</previous>`);
+    expect(revision).toContain("- subject is 106 characters, 34 over the limit");
+  });
+
+  it("keeps the better attempt when the retry does not help", async () => {
+    const w = world();
+    w.provider.replies = [
+      "<commit>feat: Add the thing</commit>",
+      `<commit>feat(Chip): Add ${"x".repeat(80)}</commit>`,
+    ];
+    const out = await generateMessage(w.deps, root, defaults(), status, signal());
+    expect(out.text).toBe("feat: Add the thing");
+    expect(out.warnings).toHaveLength(1);
+  });
+
+  it("does not retry when retries is 0", async () => {
+    const w = world();
+    w.provider.reply = "<commit>feat: Add the thing</commit>";
+    const config = { ...defaults(), retries: 0 };
+    const out = await generateMessage(w.deps, root, config, status, signal());
+    expect(w.provider.requests).toHaveLength(1);
+    expect(out.warnings).toHaveLength(1);
+  });
+
+  it("retries as many times as configured", async () => {
+    const w = world();
+    w.provider.reply = "<commit>feat: Add the thing</commit>";
+    const steps: string[] = [];
+    const config = { ...defaults(), retries: 3 };
+    await generateMessage(w.deps, root, config, (text) => steps.push(text), signal());
+    expect(w.provider.requests).toHaveLength(4);
+    expect(steps.filter((step) => step === "revising with sonnet")).toHaveLength(3);
+  });
+
+  it("ignores a retry that comes back broken", async () => {
+    const w = world();
+    w.provider.replies = ["<commit>feat: Add the thing</commit>", "not a commit message"];
+    const out = await generateMessage(w.deps, root, defaults(), status, signal());
+    expect(out.text).toBe("feat: Add the thing");
+  });
+
+  it("still cancels during a retry", async () => {
+    const w = world();
+    w.provider.replies = ["<commit>feat: Add the thing</commit>", new GenerationAbortedError()];
+    await expect(generateMessage(w.deps, root, defaults(), status, signal())).rejects.toThrow(
+      Cancelled,
+    );
   });
 
   it.each([

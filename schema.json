@@ -26,6 +26,12 @@
       "default": 120,
       "description": "How long to wait for the model before giving up."
     },
+    "retries": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 1,
+      "description": "How many times to ask the model to fix a reply that breaks a rule (subject too long, wrong case, missing body...) before showing it. 0 shows the first reply as is."
+    },
     "strictMcpConfig": {
       "type": "boolean",
       "default": true,

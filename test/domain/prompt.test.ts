@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { defaults } from "../../src/domain/config";
-import { buildPrompt, languageName, type PromptInput } from "../../src/domain/prompt";
+import {
+  buildPrompt,
+  buildRevisionPrompt,
+  languageName,
+  type PromptInput,
+} from "../../src/domain/prompt";
 import { truncate } from "../../src/utils/text";
 
 const empty: PromptInput = { stat: "", diff: "", excluded: [], instructions: "", history: [] };
@@ -151,6 +156,20 @@ describe("buildPrompt", () => {
       { ...empty, diff: "ñ".repeat(5000) },
     );
     expect(out.split("ñ").length - 1).toBe(1000);
+  });
+});
+
+describe("buildRevisionPrompt", () => {
+  it("appends the previous reply and its problems to the original prompt", () => {
+    const base = buildPrompt(defaults(), { ...empty, diff: "d" });
+    const out = buildRevisionPrompt(base, "feat: Add the thing\n", [
+      "description starts with a capital; commitlint expects lowercase",
+    ]);
+    expect(out.startsWith(base)).toBe(true);
+    expect(out).toContain("## Previous attempt");
+    expect(out).toContain("<previous>\nfeat: Add the thing\n</previous>");
+    expect(out).toContain("- description starts with a capital; commitlint expects lowercase");
+    expect(out).toContain("wrapped exactly in <commit> and </commit>");
   });
 });
 

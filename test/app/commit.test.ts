@@ -20,7 +20,14 @@ describe("commitStaged", () => {
     await commitStaged(w.deps, command(), signal());
 
     expect(w.provider.requests[0]?.model).toBe("opus");
-    expect(w.presenter.statuses).toEqual(["reading staged changes", "asking opus", "validating"]);
+    expect(w.provider.requests).toHaveLength(2);
+    expect(w.presenter.statuses).toEqual([
+      "reading staged changes",
+      "asking opus",
+      "validating",
+      "revising with opus",
+      "validating",
+    ]);
     expect(w.presenter.shown?.text).toBe("feat: Add the thing\n\n- one");
     expect(w.presenter.shown?.warnings).toEqual([expect.stringContaining("capital")]);
     expect(w.git.commits).toEqual([
@@ -57,6 +64,41 @@ describe("commitStaged", () => {
     await commitStaged(w.deps, command(), signal());
     expect(w.presenter.events).not.toContain("confirm");
     expect(w.git.commits).toHaveLength(1);
+  });
+
+  it("does not commit unattended while the message breaks a rule", async () => {
+    const w = configured();
+    w.provider.reply = "<commit>feat: Add the thing</commit>";
+    await expect(commitStaged(w.deps, command({ yes: true }), signal())).rejects.toThrow(
+      /nobody is confirming/,
+    );
+    expect(w.git.commits).toEqual([]);
+  });
+
+  it("applies the same rule when the config skips the confirmation", async () => {
+    const w = world();
+    w.files.write(path.join(w.git.repoRoot(), FILE_NAME), `{"confirm":false}`);
+    w.provider.reply = "<commit>feat: Add the thing</commit>";
+    await expect(commitStaged(w.deps, command(), signal())).rejects.toThrow(/nobody is confirming/);
+  });
+
+  it("commits unattended once a retry fixes the message", async () => {
+    const w = configured();
+    w.provider.replies = [
+      "<commit>feat: Add the thing</commit>",
+      "<commit>feat: add the thing</commit>",
+    ];
+    await commitStaged(w.deps, command({ yes: true }), signal());
+    expect(w.git.commits[0]?.message).toBe("feat: add the thing");
+    expect(w.presenter.shown?.warnings).toEqual([]);
+  });
+
+  it("does not hold a missing instructions file against --yes", async () => {
+    const w = world();
+    w.files.write(path.join(w.git.repoRoot(), FILE_NAME), `{"instructions":"missing.md"}`);
+    await commitStaged(w.deps, command({ yes: true }), signal());
+    expect(w.git.commits).toHaveLength(1);
+    expect(w.presenter.shown?.warnings).toEqual([expect.stringContaining("not found")]);
   });
 
   it("cancels when the answer is no", async () => {

@@ -1,7 +1,7 @@
 import path from "node:path";
 import type { Config } from "../domain/config";
 import { parse, render, sanitize, validateMessage, type Parsed } from "../domain/message";
-import { buildPrompt, type PromptInput } from "../domain/prompt";
+import { buildPrompt, buildRevisionPrompt, type PromptInput } from "../domain/prompt";
 import { errorMessage } from "../utils/errors";
 import { truncate } from "../utils/text";
 import { Cancelled, fail, GenerationAbortedError, ProviderMissingError } from "./errors";
@@ -11,7 +11,10 @@ export interface Generated {
   text: string;
   parsed: Parsed;
   warnings: string[];
+  notices: string[];
 }
+
+type Attempt = Pick<Generated, "text" | "parsed" | "warnings">;
 
 type Changes = Pick<PromptInput, "stat" | "diff" | "excluded">;
 
@@ -34,15 +37,34 @@ export async function generateMessage(
     throw fail("could not read the staged diff", errorMessage(err));
   }
 
-  const warnings: string[] = [];
-  const [instructions, warning] = loadInstructions(deps.files, root, config);
-  if (warning !== "") {
-    warnings.push(warning);
+  const notices: string[] = [];
+  const [instructions, notice] = loadInstructions(deps.files, root, config);
+  if (notice !== "") {
+    notices.push(notice);
   }
   const history = collectHistory(deps.git, config.history);
   const prompt = buildPrompt(config, { ...changes, instructions, history });
 
   status(`asking ${config.model}`);
+  let best = await attempt(deps, config, prompt, signal, status);
+  for (let retry = 0; retry < config.retries && best.warnings.length > 0; retry++) {
+    status(`revising with ${config.model}`);
+    const revision = buildRevisionPrompt(prompt, best.text, best.warnings);
+    const revised = await attemptQuietly(deps, config, revision, signal, status);
+    if (revised && revised.warnings.length < best.warnings.length) {
+      best = revised;
+    }
+  }
+  return { ...best, notices };
+}
+
+async function attempt(
+  deps: GenerateDependencies,
+  config: Config,
+  prompt: string,
+  signal: AbortSignal,
+  status: (text: string) => void,
+): Promise<Attempt> {
   let raw: string;
   try {
     raw = await deps.provider.generate(generationRequest(config, prompt), signal);
@@ -59,14 +81,31 @@ export async function generateMessage(
   if (!parsed) {
     throw fail("the reply is not a Conventional Commits message", text);
   }
-  let more: string[];
+  let warnings: string[];
   try {
-    more = validateMessage(parsed, config);
+    warnings = validateMessage(parsed, config);
   } catch (err) {
     throw fail("the message does not match your config", `${errorMessage(err)}\n\n${text}`);
   }
   const rendered = render(parsed, config);
-  return { text: rendered, parsed: parse(rendered) ?? parsed, warnings: [...warnings, ...more] };
+  return { text: rendered, parsed: parse(rendered) ?? parsed, warnings };
+}
+
+async function attemptQuietly(
+  deps: GenerateDependencies,
+  config: Config,
+  prompt: string,
+  signal: AbortSignal,
+  status: (text: string) => void,
+): Promise<Attempt | null> {
+  try {
+    return await attempt(deps, config, prompt, signal, status);
+  } catch (err) {
+    if (err instanceof Cancelled) {
+      throw err;
+    }
+    return null;
+  }
 }
 
 function generationRequest(config: Config, prompt: string): GenerationRequest {

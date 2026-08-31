@@ -64,14 +64,14 @@ sistema; `npm unlink -g @deadgun15/commitron` lo quita.
 
 `npm pack --dry-run` muestra exactamente qué se publica: `dist/cli.js`,
 `schema.json`, los README y la licencia. `package.json` mantiene la versión
-`0.0.0-dev`; el workflow de release pone la real a partir del tag. No la cambies
-a mano.
+`0.0.0-dev`; el workflow de release escribe la real, calculada a partir de los
+commits, solo dentro del workflow. No la cambies a mano.
 
 ## Ramas
 
 | rama | papel |
 |---|---|
-| `main` | producción. Cada commit es publicable. Las releases son tags sobre esta rama. |
+| `main` | producción. Cada merge desde `develop` publica una versión nueva si trae `feat` o `fix`. |
 | `develop` | integración. Las ramas de trabajo nacen aquí y vuelven a fusionarse aquí. |
 
 1. Crea tu rama desde `develop`: `git switch -c feat/nombre-corto develop`.
@@ -79,7 +79,7 @@ a mano.
 3. Abre un pull request contra `develop`. CI debe estar en verde: tests en Linux,
    macOS y Windows, lint y la comprobación del paquete npm.
 4. Cuando `develop` esté listo para salir, un mantenedor abre un pull request de
-   `develop` a `main`, lo fusiona y etiqueta la release.
+   `develop` a `main` y lo fusiona; la release sale sola.
 
 Ambas ramas deberían estar protegidas en GitHub (Settings → Branches → Add rule):
 exigir pull request, exigir que pasen los checks de CI y prohibir los force push.
@@ -103,23 +103,26 @@ release.
 
 ## Releases
 
-Una release es un tag sobre `main`:
+No hay tags ni números de versión a mano: **mergear `develop` en `main` es la
+release**. En cada push a `main`, el workflow de Release ejecuta la suite,
+compila `dist/cli.js` y lanza
+[semantic-release](https://semantic-release.gitbook.io), que lee los
+Conventional Commits desde el último tag y decide la versión:
 
-```sh
-git switch main
-git pull
-git tag -a v1.2.3 -m "v1.2.3"
-git push origin v1.2.3
-```
+| en los commits | versión |
+|---|---|
+| `!` o `BREAKING CHANGE` | minor mientras estemos en 0.x (`0.1.3 → 0.2.0`); major a partir de 1.0.0 |
+| `feat` | minor |
+| `fix`, `perf`, `revert` | patch |
+| solo `docs`, `refactor`, `test`, `build`, `ci`, `chore`, `style` | no se publica nada |
 
-El workflow de Release entonces:
+Con la versión decidida, la escribe en `package.json` (solo dentro del workflow;
+en git sigue `0.0.0-dev`), publica `@deadgun15/commitron` en npm con
+provenance, crea el tag `vX.Y.Z` y la release de GitHub con las notas agrupadas
+por tipo, y comenta en cada pull request incluido en qué versión salió.
 
-1. instala las dependencias, ejecuta la suite y compila `dist/cli.js`;
-2. pone la versión del tag en `package.json` y publica
-   `@deadgun15/commitron@1.2.3` en npm con provenance. Un tag de pre-release
-   como `v1.3.0-rc.1` se publica bajo el dist-tag `next` en lugar de `latest`;
-3. crea la release de GitHub con notas generadas a partir de los pull requests y
-   adjunta el `.tgz` del paquete.
+La regla "breaking = minor" vive en `.releaserc.json` (`releaseRules`). Para
+salir a 1.0.0, quítala y mergea un commit con `BREAKING CHANGE`.
 
 ### Configuración inicial para mantenedores
 
@@ -129,7 +132,18 @@ El workflow de Release entonces:
   `JeanpierreSolis15`, el repositorio `commitron` y el workflow `release.yml`, y
   con la acción `npm publish` permitida. En "Publishing access" conviene
   "Require two-factor authentication and disallow bypass-2FA tokens": no afecta
-  a OIDC y deja tu 2FA como único otro camino para publicar.
+  a OIDC y deja tu 2FA como único otro camino para publicar. npm autoriza por el
+  nombre del archivo: si renombras `release.yml`, actualiza el trusted publisher
+  o la publicación fallará.
+- **semantic-release publica con `exec`, no con `@semantic-release/npm`.** El
+  plugin oficial de npm exige un `NPM_TOKEN` y no entiende trusted publishing
+  (issue abierto), así que `.releaserc.json` fija la versión con `npm version`
+  y publica con `npm publish` a través de `@semantic-release/exec`; la release
+  de GitHub la crea `@semantic-release/github` con el `GITHUB_TOKEN` del
+  workflow. `conventional-changelog-conventionalcommits` va fijado a la versión
+  8 porque la 10 necesita un `conventional-changelog-writer` más nuevo del que
+  trae semantic-release. Para probar la configuración sin publicar:
+  `GITHUB_TOKEN=<token> npx semantic-release --dry-run --no-ci --branches <rama>`.
 - **Nombre del paquete.** Es `@deadgun15/commitron`: el scope es el usuario de
   npm del mantenedor, porque el nombre sin scope `commitron` pertenece a otra
   cuenta. El comando instalado sigue siendo `commitron` (`bin` en
