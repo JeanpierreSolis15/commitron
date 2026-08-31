@@ -64,8 +64,8 @@ sistema; `npm unlink -g @deadgun15/commitron` lo quita.
 
 `npm pack --dry-run` muestra exactamente qué se publica: `dist/cli.js`,
 `schema.json`, los README y la licencia. `package.json` mantiene la versión
-`0.0.0-dev`; el workflow de release pone la real a partir del tag. No la cambies
-a mano.
+`0.0.0-dev`; el workflow de release escribe la real, calculada a partir de los
+commits, solo dentro del workflow. No la cambies a mano.
 
 ## Ramas
 
@@ -132,7 +132,18 @@ salir a 1.0.0, quítala y mergea un commit con `BREAKING CHANGE`.
   `JeanpierreSolis15`, el repositorio `commitron` y el workflow `release.yml`, y
   con la acción `npm publish` permitida. En "Publishing access" conviene
   "Require two-factor authentication and disallow bypass-2FA tokens": no afecta
-  a OIDC y deja tu 2FA como único otro camino para publicar.
+  a OIDC y deja tu 2FA como único otro camino para publicar. npm autoriza por el
+  nombre del archivo: si renombras `release.yml`, actualiza el trusted publisher
+  o la publicación fallará.
+- **semantic-release publica con `exec`, no con `@semantic-release/npm`.** El
+  plugin oficial de npm exige un `NPM_TOKEN` y no entiende trusted publishing
+  (issue abierto), así que `.releaserc.json` fija la versión con `npm version`
+  y publica con `npm publish` a través de `@semantic-release/exec`; la release
+  de GitHub la crea `@semantic-release/github` con el `GITHUB_TOKEN` del
+  workflow. `conventional-changelog-conventionalcommits` va fijado a la versión
+  8 porque la 10 necesita un `conventional-changelog-writer` más nuevo del que
+  trae semantic-release. Para probar la configuración sin publicar:
+  `GITHUB_TOKEN=<token> npx semantic-release --dry-run --no-ci --branches <rama>`.
 - **Nombre del paquete.** Es `@deadgun15/commitron`: el scope es el usuario de
   npm del mantenedor, porque el nombre sin scope `commitron` pertenece a otra
   cuenta. El comando instalado sigue siendo `commitron` (`bin` en
