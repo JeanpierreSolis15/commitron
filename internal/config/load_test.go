@@ -13,7 +13,11 @@ func isolateGlobal(t *testing.T) string {
 	t.Setenv("AppData", dir)
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("HOME", dir)
-	return dir
+	path, err := GlobalPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 func write(t *testing.T, path, content string) {
@@ -62,11 +66,10 @@ func TestLoadMergesFieldByField(t *testing.T) {
 }
 
 func TestLoadPrecedence(t *testing.T) {
-	globalDir := isolateGlobal(t)
+	globalPath := isolateGlobal(t)
 	root := t.TempDir()
 
-	write(t, filepath.Join(globalDir, "commitron", "config.json"),
-		`{"model":"from-global","language":"de","subjectMaxLength":50}`)
+	write(t, globalPath, `{"model":"from-global","language":"de","subjectMaxLength":50}`)
 	write(t, filepath.Join(root, "package.json"),
 		`{"name":"x","commitron":{"model":"from-package","language":"fr"}}`)
 	write(t, filepath.Join(root, FileName),
