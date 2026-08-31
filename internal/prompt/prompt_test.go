@@ -41,7 +41,6 @@ func TestBuildIncludesTheContract(t *testing.T) {
 func TestBuildTruncatesTheDiff(t *testing.T) {
 	cfg := config.Defaults()
 	cfg.MaxDiffChars = 1000
-	// A letter the template itself never uses, so the count is only the diff.
 	long := strings.Repeat("Z", 5000)
 
 	out, err := Build(cfg, Input{Diff: long}, "")

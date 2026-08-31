@@ -1,5 +1,3 @@
-// Package gitx wraps the git commands commitron needs. Every call goes through
-// exec.Command with an argument slice: no shell is ever involved.
 package gitx
 
 import (
@@ -13,13 +11,11 @@ import (
 )
 
 var (
-	// ErrNotARepo is returned when the working directory is outside a git repository.
 	ErrNotARepo = errors.New("not a git repository")
-	// ErrGitMissing is returned when the git executable is not on PATH.
+
 	ErrGitMissing = errors.New("git executable not found on PATH")
 )
 
-// Stats summarises what is currently staged.
 type Stats struct {
 	Files   int
 	Added   int
@@ -44,7 +40,6 @@ func run(args ...string) (string, error) {
 	return out.String(), nil
 }
 
-// RepoRoot returns the absolute path of the repository containing the working directory.
 func RepoRoot() (string, error) {
 	out, err := run("rev-parse", "--show-toplevel")
 	if err != nil {
@@ -56,8 +51,6 @@ func RepoRoot() (string, error) {
 	return strings.TrimSpace(out), nil
 }
 
-// StagedStats counts staged files and line changes. Binary files count as files
-// with no line delta, which is what git reports as "-".
 func StagedStats() (Stats, error) {
 	out, err := run("diff", "--cached", "--numstat")
 	if err != nil {
@@ -84,9 +77,6 @@ func StagedStats() (Stats, error) {
 	return s, nil
 }
 
-// excludeArgs turns config patterns into a git pathspec that drops them from the diff.
-// Default pathspec magic is used on purpose: "*" crosses directory separators, so
-// "*.lock" matches at any depth while "pnpm-lock.yaml" stays anchored at the root.
 func excludeArgs(patterns []string) []string {
 	args := []string{"--", "."}
 	for _, p := range patterns {
@@ -100,13 +90,10 @@ func excludeArgs(patterns []string) []string {
 	return args
 }
 
-// StagedStat returns the --stat summary of everything staged, exclusions included:
-// the model should know a file changed even when its diff is not sent.
 func StagedStat() (string, error) {
 	return run("diff", "--cached", "--stat", "--no-color")
 }
 
-// StagedDiff returns the staged patch with the configured patterns left out.
 func StagedDiff(exclude []string) (string, error) {
 	args := append([]string{"diff", "--cached", "--no-color"}, excludeArgs(exclude)...)
 	return run(args...)
@@ -127,7 +114,6 @@ func stagedNames(exclude []string) ([]string, error) {
 	return names, nil
 }
 
-// ExcludedFiles lists the staged files the exclusions removed from the diff.
 func ExcludedFiles(exclude []string) ([]string, error) {
 	if len(exclude) == 0 {
 		return nil, nil
@@ -153,14 +139,11 @@ func ExcludedFiles(exclude []string) ([]string, error) {
 	return dropped, nil
 }
 
-// CommitOptions mirrors the git flags commitron exposes.
 type CommitOptions struct {
 	Edit   bool
 	Verify bool
 }
 
-// Commit writes the message to a temp file and hands it to git. The temp file
-// (instead of stdin) keeps stdin free for the editor when Edit is set.
 func Commit(message string, opts CommitOptions) (string, error) {
 	f, err := os.CreateTemp("", "commitron-*.txt")
 	if err != nil {
@@ -187,7 +170,7 @@ func Commit(message string, opts CommitOptions) (string, error) {
 
 	cmd := exec.Command("git", args...)
 	cmd.Stdin = os.Stdin
-	// git's own summary goes to stderr so stdout stays clean for piping.
+
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {

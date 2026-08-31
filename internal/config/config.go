@@ -1,49 +1,67 @@
-// Package config holds commitron's settings and the rules for resolving them.
 package config
 
 import (
+	"errors"
 	"fmt"
 	"slices"
+	"strings"
 )
 
-// SchemaURL documents the config file so editors can autocomplete it.
 const SchemaURL = "https://raw.githubusercontent.com/JeanpierreSolis15/commitron/main/schema.json"
 
-// Config is the full set of knobs. Every field is also a key in .commitron.json.
+const (
+	CaseLower    = "lower"
+	CaseSentence = "sentence"
+	CaseAny      = "any"
+)
+
+const (
+	BodyAuto   = "auto"
+	BodyAlways = "always"
+	BodyNever  = "never"
+)
+
+const (
+	ModeAuto   = "auto"
+	ModeAlways = "always"
+	ModeNever  = "never"
+)
+
+var (
+	subjectCases = []string{CaseLower, CaseSentence, CaseAny}
+	scopeCases   = []string{CaseLower, CaseAny}
+	bodyModes    = []string{BodyAuto, BodyAlways, BodyNever}
+	modes        = []string{ModeAuto, ModeAlways, ModeNever}
+)
+
 type Config struct {
 	Schema string `json:"$schema,omitempty"`
 
-	// Model
 	Model           string   `json:"model"`
 	FallbackModel   string   `json:"fallbackModel,omitempty"`
 	TimeoutSeconds  int      `json:"timeoutSeconds"`
 	StrictMCPConfig bool     `json:"strictMcpConfig"`
 	ExtraArgs       []string `json:"extraArgs,omitempty"`
 
-	// Message shape. The defaults mirror @commitlint/config-conventional so the
-	// output passes a commitlint hook without extra configuration.
 	Language          string   `json:"language"`
 	Types             []string `json:"types"`
 	SubjectMaxLength  int      `json:"subjectMaxLength"`
-	SubjectCase       string   `json:"subjectCase"` // lower | sentence | any
-	ScopeCase         string   `json:"scopeCase"`   // lower | any
-	Body              string   `json:"body"`        // auto | always | never
+	SubjectCase       string   `json:"subjectCase"`
+	ScopeCase         string   `json:"scopeCase"`
+	Body              string   `json:"body"`
 	BodyMaxLineLength int      `json:"bodyMaxLineLength"`
 
-	// What the model gets to see
 	MaxDiffChars         int      `json:"maxDiffChars"`
 	Exclude              []string `json:"exclude"`
 	Instructions         string   `json:"instructions,omitempty"`
 	InstructionsMaxChars int      `json:"instructionsMaxChars"`
 
-	// Behaviour
 	Confirm bool   `json:"confirm"`
 	Verify  bool   `json:"verify"`
-	Color   string `json:"color"`   // auto | always | never
-	Unicode string `json:"unicode"` // auto | always | never
+	Color   string `json:"color"`
+	Unicode string `json:"unicode"`
 }
 
-// Defaults are what commitron does with no config file at all.
 func Defaults() Config {
 	return Config{
 		Model:           "sonnet",
@@ -56,9 +74,9 @@ func Defaults() Config {
 			"test", "build", "ci", "chore", "style", "revert",
 		},
 		SubjectMaxLength:  72,
-		SubjectCase:       "lower",
-		ScopeCase:         "lower",
-		Body:              "auto",
+		SubjectCase:       CaseLower,
+		ScopeCase:         CaseLower,
+		Body:              BodyAuto,
 		BodyMaxLineLength: 100,
 
 		MaxDiffChars: 30000,
@@ -70,45 +88,45 @@ func Defaults() Config {
 
 		Confirm: true,
 		Verify:  true,
-		Color:   "auto",
-		Unicode: "auto",
+		Color:   ModeAuto,
+		Unicode: ModeAuto,
 	}
 }
 
-var modes = []string{"auto", "always", "never"}
-
-// Validate rejects a config that would misbehave later, naming the offending key.
 func (c Config) Validate() error {
 	switch {
 	case c.Model == "":
-		return fmt.Errorf("model: cannot be empty")
+		return errors.New("model: cannot be empty")
 	case c.TimeoutSeconds < 5:
 		return fmt.Errorf("timeoutSeconds: %d is too low, use at least 5", c.TimeoutSeconds)
 	case c.Language == "":
-		return fmt.Errorf("language: cannot be empty")
+		return errors.New("language: cannot be empty")
 	case len(c.Types) == 0:
-		return fmt.Errorf("types: needs at least one commit type")
+		return errors.New("types: needs at least one commit type")
 	case c.SubjectMaxLength < 20:
 		return fmt.Errorf("subjectMaxLength: %d is too low, use at least 20", c.SubjectMaxLength)
-	case !slices.Contains([]string{"lower", "sentence", "any"}, c.SubjectCase):
-		return fmt.Errorf("subjectCase: %q is not one of lower, sentence, any", c.SubjectCase)
-	case !slices.Contains([]string{"lower", "any"}, c.ScopeCase):
-		return fmt.Errorf("scopeCase: %q is not one of lower, any", c.ScopeCase)
+	case !slices.Contains(subjectCases, c.SubjectCase):
+		return notOneOf("subjectCase", c.SubjectCase, subjectCases)
+	case !slices.Contains(scopeCases, c.ScopeCase):
+		return notOneOf("scopeCase", c.ScopeCase, scopeCases)
 	case c.BodyMaxLineLength < 0:
-		return fmt.Errorf("bodyMaxLineLength: cannot be negative")
+		return errors.New("bodyMaxLineLength: cannot be negative")
 	case c.MaxDiffChars < 500:
 		return fmt.Errorf("maxDiffChars: %d is too low, use at least 500", c.MaxDiffChars)
 	case c.InstructionsMaxChars < 0:
-		return fmt.Errorf("instructionsMaxChars: cannot be negative")
-	case !slices.Contains([]string{"auto", "always", "never"}, c.Body):
-		return fmt.Errorf("body: %q is not one of auto, always, never", c.Body)
+		return errors.New("instructionsMaxChars: cannot be negative")
+	case !slices.Contains(bodyModes, c.Body):
+		return notOneOf("body", c.Body, bodyModes)
 	case !slices.Contains(modes, c.Color):
-		return fmt.Errorf("color: %q is not one of auto, always, never", c.Color)
+		return notOneOf("color", c.Color, modes)
 	case !slices.Contains(modes, c.Unicode):
-		return fmt.Errorf("unicode: %q is not one of auto, always, never", c.Unicode)
+		return notOneOf("unicode", c.Unicode, modes)
 	}
 	return nil
 }
 
-// AllowsType reports whether the configured type list accepts t.
 func (c Config) AllowsType(t string) bool { return slices.Contains(c.Types, t) }
+
+func notOneOf(key, value string, allowed []string) error {
+	return fmt.Errorf("%s: %q is not one of %s", key, value, strings.Join(allowed, ", "))
+}

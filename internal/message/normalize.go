@@ -8,9 +8,6 @@ import (
 	"github.com/JeanpierreSolis15/commitron/internal/config"
 )
 
-// Canonical rebuilds the subject line in the shape commitlint expects: a
-// lowercase type, the scope in parentheses when there is one, the breaking
-// marker before the colon, one space, and no full stop at the end.
 func (p Parsed) Canonical() string {
 	var b strings.Builder
 	b.WriteString(strings.ToLower(p.Type))
@@ -25,12 +22,6 @@ func (p Parsed) Canonical() string {
 	return b.String()
 }
 
-// Render returns the message that will actually be committed. It applies the
-// fixes that are mechanical and therefore safe: the type is lowercased, the
-// trailing full stop goes, the body always sits after exactly one blank line
-// (commitlint's body-leading-blank) and its lines are wrapped to the configured
-// width (body-max-line-length). Anything that needs judgement is left alone and
-// reported by Validate instead.
 func (p Parsed) Render(cfg config.Config) string {
 	subject := p.Canonical()
 	if p.Body == "" {
@@ -50,8 +41,6 @@ func wrapBody(body string, max int) string {
 	return strings.Join(out, "\n")
 }
 
-// wrapLine breaks one line at word boundaries. A bullet keeps its marker on the
-// first line and indents the continuations under the text.
 func wrapLine(line string, max int) []string {
 	if utf8.RuneCountInString(line) <= max || strings.TrimSpace(line) == "" {
 		return []string{line}
@@ -82,9 +71,6 @@ func wrapLine(line string, max int) []string {
 	return append(lines, current)
 }
 
-// violatesLowerCase reports whether a description opens with a capital that is
-// not part of a name or an acronym. commitlint rejects a sentence-cased
-// subject but tolerates "OAuth" or "API", and so does this.
 func violatesLowerCase(description string) bool {
 	if description == "" {
 		return false
@@ -99,7 +85,7 @@ func violatesLowerCase(description string) bool {
 	}
 	for _, r := range []rune(word)[1:] {
 		if unicode.IsUpper(r) {
-			return false // OAuth, API, PostgreSQL
+			return false
 		}
 	}
 	return true

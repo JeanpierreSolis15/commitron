@@ -8,8 +8,6 @@ import (
 	"testing"
 )
 
-// newRepo creates a throwaway repository and makes it the working directory for
-// the duration of the test. gitx talks to whatever repo the process is in.
 func newRepo(t *testing.T) string {
 	t.Helper()
 	if _, err := exec.LookPath("git"); err != nil {
@@ -39,7 +37,6 @@ func newRepo(t *testing.T) string {
 	}
 	t.Cleanup(func() { os.Chdir(previous) })
 
-	// TempDir can be a symlinked path (/var vs /private/var on macOS); ask git.
 	root, err := RepoRoot()
 	if err != nil {
 		t.Fatal(err)
@@ -68,8 +65,7 @@ func TestRepoRootFailsOutsideARepo(t *testing.T) {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	// TMPDIR can itself live inside a repository (a GOTMPDIR pointed at the
-	// working copy, for one). The ceiling stops git from walking up past it.
+
 	t.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(dir))
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
@@ -175,7 +171,7 @@ func TestStagedStatKeepsExcludedFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The model should know the lockfile changed even though its diff is not sent.
+
 	if !strings.Contains(stat, "pnpm-lock.yaml") {
 		t.Error("the file list must still mention excluded files")
 	}

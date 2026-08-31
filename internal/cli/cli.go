@@ -1,4 +1,3 @@
-// Package cli wires flags, subcommands and exit codes.
 package cli
 
 import (
@@ -10,7 +9,6 @@ import (
 	"strings"
 )
 
-// Version is set at build time with -ldflags "-X ...cli.Version=v1.2.3".
 var Version = "dev"
 
 const usage = `commitron — AI commit messages from your staged diff, via the Claude Code CLI.
@@ -42,7 +40,6 @@ Config resolution, lowest precedence first:
   defaults -> user config -> package.json#commitron -> .commitron.json -> --config -> flags
 `
 
-// failure is an error with an optional detail block, printed dimmed underneath.
 type failure struct {
 	msg    string
 	detail string
@@ -54,7 +51,6 @@ func fail(msg, detail string) error { return &failure{msg: msg, detail: detail} 
 
 var errCancelled = fail("cancelled", "")
 
-// Main runs commitron and returns the process exit code.
 func Main(args []string) int {
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		switch args[0] {
@@ -106,6 +102,6 @@ func indent(text string) string {
 
 func newFlagSet(name string) *flag.FlagSet {
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
-	fs.SetOutput(io.Discard) // errors are reported by report()
+	fs.SetOutput(io.Discard)
 	return fs
 }

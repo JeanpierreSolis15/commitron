@@ -7,14 +7,12 @@ import (
 	"testing"
 )
 
-// isolateGlobal points os.UserConfigDir at a temp directory so a test never
-// reads (or is influenced by) the developer's real config.
 func isolateGlobal(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	t.Setenv("AppData", dir)         // Windows
-	t.Setenv("XDG_CONFIG_HOME", dir) // Linux
-	t.Setenv("HOME", dir)            // macOS fallback
+	t.Setenv("AppData", dir)
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	t.Setenv("HOME", dir)
 	return dir
 }
 
@@ -45,7 +43,7 @@ func TestLoadDefaultsWhenNothingExists(t *testing.T) {
 func TestLoadMergesFieldByField(t *testing.T) {
 	isolateGlobal(t)
 	root := t.TempDir()
-	// Only one key is declared; everything else must keep its default.
+
 	write(t, filepath.Join(root, FileName), `{"model":"opus"}`)
 
 	res, err := Load(root, "")

@@ -10,11 +10,8 @@ import (
 	"time"
 )
 
-// ErrNotInstalled means the Claude Code CLI is not on PATH.
 var ErrNotInstalled = errors.New("the `claude` CLI was not found on your PATH")
 
-// Claude drives the Claude Code CLI in print mode. It never goes through a
-// shell, so the timeout kills the real process instead of an intermediate one.
 type Claude struct {
 	Model           string
 	FallbackModel   string
@@ -23,7 +20,8 @@ type Claude struct {
 	Timeout         time.Duration
 }
 
-// Name reports the model this provider will use.
+var _ Provider = Claude{}
+
 func (c Claude) Name() string { return c.Model }
 
 func (c Claude) args() []string {
@@ -32,14 +30,11 @@ func (c Claude) args() []string {
 		args = append(args, "--fallback-model", c.FallbackModel)
 	}
 	if c.StrictMCPConfig {
-		// Generating a commit message needs no tools; skipping the project's MCP
-		// servers keeps the call fast and cheap.
 		args = append(args, "--strict-mcp-config")
 	}
 	return append(args, c.ExtraArgs...)
 }
 
-// Generate pipes the prompt to the CLI over stdin and returns its stdout.
 func (c Claude) Generate(ctx context.Context, prompt string) (string, error) {
 	if _, err := exec.LookPath("claude"); err != nil {
 		return "", ErrNotInstalled

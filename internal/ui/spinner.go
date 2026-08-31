@@ -9,8 +9,6 @@ import (
 
 const frameEvery = 80 * time.Millisecond
 
-// Spinner is a one-line progress indicator. Only that single line is repainted,
-// so a narrow terminal cannot smear the output the way a multi-line redraw does.
 type Spinner struct {
 	theme *Theme
 	live  bool
@@ -23,7 +21,6 @@ type Spinner struct {
 	wg   sync.WaitGroup
 }
 
-// NewSpinner prepares the animated line. The header is printed by the caller.
 func (t *Theme) NewSpinner() *Spinner {
 	return &Spinner{
 		theme: t,
@@ -33,7 +30,6 @@ func (t *Theme) NewSpinner() *Spinner {
 	}
 }
 
-// Start begins the animation. It is safe to call Stop even if Start was not called.
 func (s *Spinner) Start() {
 	s.start = time.Now()
 	if !s.live {
@@ -57,7 +53,6 @@ func (s *Spinner) Start() {
 	s.draw()
 }
 
-// Status changes the text shown next to the spinner.
 func (s *Spinner) Status(text string) {
 	s.mu.Lock()
 	s.label = text
@@ -86,7 +81,6 @@ func (s *Spinner) draw() {
 	)
 }
 
-// Stop clears the line and restores the cursor. Calling it twice is harmless.
 func (s *Spinner) Stop() {
 	if !s.live {
 		return

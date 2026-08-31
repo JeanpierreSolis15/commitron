@@ -1,4 +1,3 @@
-// Package message cleans up, parses and validates what the model replies.
 package message
 
 import (
@@ -15,12 +14,10 @@ var (
 	fenceRe   = regexp.MustCompile("(?s)^```[a-zA-Z]*\r?\n(.*?)\r?\n```$")
 	subjectRe = regexp.MustCompile(`^([a-zA-Z]+)(?:\(([^()]+)\))?(!)?:[ \t]*(.+)$`)
 
-	// Footers models like to append that have no business in a commit.
 	noiseRe = regexp.MustCompile(`(?i)^\s*(co-authored-by:|claude-session:|generated with \[?claude|🤖)`)
 	urlRe   = regexp.MustCompile(`^\s*https://claude\.ai/`)
 )
 
-// Parsed is a commit message broken into its Conventional Commits parts.
 type Parsed struct {
 	Type        string
 	Scope       string
@@ -30,8 +27,6 @@ type Parsed struct {
 	Body        string
 }
 
-// Sanitize pulls the message out of whatever wrapping the model used and drops
-// trailing attribution lines.
 func Sanitize(raw string) string {
 	msg := strings.TrimSpace(strings.ReplaceAll(raw, "\r\n", "\n"))
 	if m := tagRe.FindStringSubmatch(msg); m != nil {
@@ -51,58 +46,42 @@ func Sanitize(raw string) string {
 	return strings.TrimSpace(strings.Join(kept, "\n"))
 }
 
-// Parse splits a sanitized message. ok is false when the subject line is not
-// in Conventional Commits shape.
 func Parse(msg string) (Parsed, bool) {
-	lines := strings.Split(msg, "\n")
-	if len(lines) == 0 {
-		return Parsed{}, false
-	}
-	subject := strings.TrimSpace(lines[0])
+	subject, body, _ := strings.Cut(msg, "\n")
+	subject = strings.TrimSpace(subject)
 	m := subjectRe.FindStringSubmatch(subject)
 	if m == nil {
 		return Parsed{}, false
 	}
-	body := strings.TrimSpace(strings.Join(lines[1:], "\n"))
 	return Parsed{
 		Type:        strings.ToLower(m[1]),
 		Scope:       m[2],
 		Breaking:    m[3] == "!",
 		Description: strings.TrimSpace(m[4]),
 		Subject:     subject,
-		Body:        body,
+		Body:        strings.TrimSpace(body),
 	}, true
 }
 
-// Validate enforces the rules that are worth failing on and returns warnings
-// for the ones that are not. A wrong type means the model ignored the contract,
-// so that blocks. The rest mirror @commitlint/config-conventional and only warn:
-// the fixable ones are already fixed by Render, and for the rest your own
-// commit-msg hook stays the final judge.
 func Validate(p Parsed, cfg config.Config) (warnings []string, err error) {
 	if !cfg.AllowsType(p.Type) {
 		return nil, fmt.Errorf("%q is not an allowed type (%s)", p.Type, strings.Join(cfg.Types, ", "))
 	}
 
-	// header-max-length, measured on what will actually be committed.
 	subject := p.Canonical()
 	if n := utf8.RuneCountInString(subject); n > cfg.SubjectMaxLength {
 		warnings = append(warnings,
 			fmt.Sprintf("subject is %d characters, %d over the limit", n, n-cfg.SubjectMaxLength))
 	}
 
-	// subject-case: commitlint rejects a sentence-cased description.
-	if cfg.SubjectCase == "lower" && violatesLowerCase(p.Description) {
+	if cfg.SubjectCase == config.CaseLower && violatesLowerCase(p.Description) {
 		warnings = append(warnings, "description starts with a capital; commitlint expects lowercase")
 	}
 
-	// scope-case
-	if cfg.ScopeCase == "lower" && hasUpper(p.Scope) {
+	if cfg.ScopeCase == config.CaseLower && hasUpper(p.Scope) {
 		warnings = append(warnings, fmt.Sprintf("scope %q is not lowercase", p.Scope))
 	}
 
-	// body-max-line-length, checked after wrapping: what is left is a single
-	// word too long to break, such as a URL.
 	if cfg.BodyMaxLineLength > 0 {
 		for _, line := range strings.Split(wrapBody(p.Body, cfg.BodyMaxLineLength), "\n") {
 			if n := utf8.RuneCountInString(line); n > cfg.BodyMaxLineLength {
@@ -113,10 +92,10 @@ func Validate(p Parsed, cfg config.Config) (warnings []string, err error) {
 		}
 	}
 
-	if cfg.Body == "always" && p.Body == "" {
+	if cfg.Body == config.BodyAlways && p.Body == "" {
 		warnings = append(warnings, "body is required by config but the model returned none")
 	}
-	if cfg.Body == "never" && p.Body != "" {
+	if cfg.Body == config.BodyNever && p.Body != "" {
 		warnings = append(warnings, "config asks for no body but the model returned one")
 	}
 	return warnings, nil

@@ -78,18 +78,14 @@ func runCommit(argv []string) error {
 		return fail("this is not a git repository", "run commitron from inside a repo, or `git init` first")
 	}
 
-	res, err := config.Load(root, flags.configPath)
+	res, err := resolveConfig(root, flags)
 	if err != nil {
-		return fail("invalid configuration", err.Error())
+		return err
 	}
-	cfg := applyFlags(res.Config, flags)
-	if err := cfg.Validate(); err != nil {
-		return fail("invalid configuration", err.Error())
-	}
-
+	cfg := res.Config
 	theme := ui.New(cfg.Color, cfg.Unicode)
 
-	if len(res.Sources) == 0 && !flags.noInit && !flags.dryRun && os.Getenv("COMMITRON_NO_INIT") == "" {
+	if shouldOfferInit(res, flags) {
 		if cfg, err = offerInit(theme, root, cfg, flags); err != nil {
 			return err
 		}
@@ -111,68 +107,18 @@ func runCommit(argv []string) error {
 	spinner.Start()
 	defer spinner.Stop()
 
-	spinner.Status("reading staged changes")
-	stat, diff, excluded, err := collectDiff(cfg)
+	text, warnings, err := generate(ctx, root, cfg, spinner)
 	if err != nil {
-		return fail("could not read the staged diff", err.Error())
-	}
-
-	instructions, warning := loadInstructions(root, cfg)
-	promptText, err := prompt.Build(cfg, prompt.Input{Stat: stat, Diff: diff, Excluded: excluded}, instructions)
-	if err != nil {
-		return fail("could not build the prompt", err.Error())
-	}
-
-	spinner.Status("asking " + cfg.Model)
-	claude := provider.Claude{
-		Model:           cfg.Model,
-		FallbackModel:   cfg.FallbackModel,
-		StrictMCPConfig: cfg.StrictMCPConfig,
-		ExtraArgs:       cfg.ExtraArgs,
-		Timeout:         time.Duration(cfg.TimeoutSeconds) * time.Second,
-	}
-	raw, err := claude.Generate(ctx, promptText)
-	if err != nil {
-		spinner.Stop()
-		switch {
-		case errors.Is(err, provider.ErrNotInstalled):
-			return fail("the `claude` CLI was not found on your PATH",
-				"commitron uses your Claude Code subscription.\ninstall it from https://claude.com/claude-code and try again")
-		case errors.Is(err, context.Canceled):
-			return errCancelled
-		}
-		return fail("could not generate the message", err.Error())
-	}
-
-	spinner.Status("validating")
-	text := message.Sanitize(raw)
-	if text == "" {
-		return fail("the model returned an empty message", "")
-	}
-	parsed, ok := message.Parse(text)
-	if !ok {
-		return fail("the reply is not a Conventional Commits message", text)
-	}
-	warnings, err := message.Validate(parsed, cfg)
-	if err != nil {
-		return fail("the message does not match your config", err.Error()+"\n\n"+text)
+		return err
 	}
 	spinner.Stop()
 
-	// What gets committed is the canonical form: lowercase type, no trailing
-	// full stop, a blank line before the body and its lines wrapped.
-	text = parsed.Render(cfg)
-	parsed, _ = message.Parse(text)
-
+	parsed, _ := message.Parse(text)
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, theme.Message(parsed))
-	if warning != "" {
-		theme.Warn(warning)
-	}
 	for _, w := range warnings {
 		theme.Warn(w)
 	}
-	// A piped stdout gets the plain message, so `commitron --dry-run > msg.txt` works.
 	if !ui.IsTerminal(os.Stdout) {
 		fmt.Fprintln(os.Stdout, text)
 	}
@@ -181,7 +127,100 @@ func runCommit(argv []string) error {
 		fmt.Fprintf(os.Stderr, "\n  %s\n", theme.Dim("dry run "+theme.Glyph.Dot+" nothing committed"))
 		return nil
 	}
+	return commit(theme, cfg, flags, text)
+}
 
+func resolveConfig(root string, flags commitFlags) (config.Result, error) {
+	res, err := config.Load(root, flags.configPath)
+	if err != nil {
+		return res, fail("invalid configuration", err.Error())
+	}
+	res.Config = applyFlags(res.Config, flags)
+	if err := res.Config.Validate(); err != nil {
+		return res, fail("invalid configuration", err.Error())
+	}
+	return res, nil
+}
+
+func applyFlags(cfg config.Config, f commitFlags) config.Config {
+	if f.model != "" {
+		cfg.Model = f.model
+	}
+	if f.color != "" {
+		cfg.Color = f.color
+	}
+	if f.noVerify {
+		cfg.Verify = false
+	}
+	return cfg
+}
+
+func shouldOfferInit(res config.Result, flags commitFlags) bool {
+	return len(res.Sources) == 0 && !flags.noInit && !flags.dryRun && os.Getenv("COMMITRON_NO_INIT") == ""
+}
+
+func generate(ctx context.Context, root string, cfg config.Config, spinner *ui.Spinner) (string, []string, error) {
+	spinner.Status("reading staged changes")
+	input, err := collectDiff(cfg)
+	if err != nil {
+		return "", nil, fail("could not read the staged diff", err.Error())
+	}
+
+	var warnings []string
+	instructions, warning := loadInstructions(root, cfg)
+	if warning != "" {
+		warnings = append(warnings, warning)
+	}
+	promptText, err := prompt.Build(cfg, input, instructions)
+	if err != nil {
+		return "", nil, fail("could not build the prompt", err.Error())
+	}
+
+	spinner.Status("asking " + cfg.Model)
+	raw, err := newProvider(cfg).Generate(ctx, promptText)
+	if err != nil {
+		return "", nil, generationError(err)
+	}
+
+	spinner.Status("validating")
+	text := message.Sanitize(raw)
+	if text == "" {
+		return "", nil, fail("the model returned an empty message", "")
+	}
+	parsed, ok := message.Parse(text)
+	if !ok {
+		return "", nil, fail("the reply is not a Conventional Commits message", text)
+	}
+	more, err := message.Validate(parsed, cfg)
+	if err != nil {
+		return "", nil, fail("the message does not match your config", err.Error()+"\n\n"+text)
+	}
+	return parsed.Render(cfg), append(warnings, more...), nil
+}
+
+func newProvider(cfg config.Config) provider.Provider {
+	return provider.Claude{
+		Model:           cfg.Model,
+		FallbackModel:   cfg.FallbackModel,
+		StrictMCPConfig: cfg.StrictMCPConfig,
+		ExtraArgs:       cfg.ExtraArgs,
+		Timeout:         time.Duration(cfg.TimeoutSeconds) * time.Second,
+	}
+}
+
+func generationError(err error) error {
+	switch {
+	case errors.Is(err, provider.ErrNotInstalled):
+		return fail("the `claude` CLI was not found on your PATH",
+			"commitron uses your Claude Code subscription.\ninstall it from https://claude.com/claude-code and try again")
+	case errors.Is(err, context.Canceled):
+		return errCancelled
+	default:
+		return fail("could not generate the message", err.Error())
+	}
+}
+
+func commit(theme *ui.Theme, cfg config.Config, flags commitFlags, text string) error {
 	edit := flags.edit
 	if cfg.Confirm && !flags.yes {
 		switch theme.Confirm() {
@@ -204,44 +243,25 @@ func runCommit(argv []string) error {
 	return nil
 }
 
-func applyFlags(cfg config.Config, f commitFlags) config.Config {
-	if f.model != "" {
-		cfg.Model = f.model
+func collectDiff(cfg config.Config) (prompt.Input, error) {
+	stat, err := gitx.StagedStat()
+	if err != nil {
+		return prompt.Input{}, err
 	}
-	if f.color != "" {
-		cfg.Color = f.color
-	}
-	if f.noVerify {
-		cfg.Verify = false
-	}
-	return cfg
-}
-
-// collectDiff reads the staged patch minus the excluded paths. When the
-// exclusions leave nothing at all, the full diff is used instead: an empty
-// prompt is worse than an oversized one.
-func collectDiff(cfg config.Config) (stat, diff string, excluded []string, err error) {
-	if stat, err = gitx.StagedStat(); err != nil {
-		return "", "", nil, err
-	}
-	if diff, err = gitx.StagedDiff(cfg.Exclude); err != nil {
-		return "", "", nil, err
+	diff, err := gitx.StagedDiff(cfg.Exclude)
+	if err != nil {
+		return prompt.Input{}, err
 	}
 	if strings.TrimSpace(diff) == "" {
 		if diff, err = gitx.StagedDiff(nil); err != nil {
-			return "", "", nil, err
+			return prompt.Input{}, err
 		}
-		return stat, diff, nil, nil
+		return prompt.Input{Stat: stat, Diff: diff}, nil
 	}
-	excluded, err = gitx.ExcludedFiles(cfg.Exclude)
-	if err != nil {
-		return stat, diff, nil, nil
-	}
-	return stat, diff, excluded, nil
+	excluded, _ := gitx.ExcludedFiles(cfg.Exclude)
+	return prompt.Input{Stat: stat, Diff: diff, Excluded: excluded}, nil
 }
 
-// loadInstructions reads the project conventions file, if one is configured.
-// A missing file is a warning, not a failure: the commit is still worth making.
 func loadInstructions(root string, cfg config.Config) (text, warning string) {
 	if cfg.Instructions == "" {
 		return "", ""

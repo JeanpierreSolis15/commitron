@@ -17,9 +17,6 @@ var (
 	procGetFileInformationByHandleEx = kernel32.NewProc("GetFileInformationByHandleEx")
 )
 
-// isTerminal has to handle two kinds of console on Windows: the real one, which
-// answers GetConsoleMode, and the mintty pty that Git Bash and MSYS2 hand out,
-// which is a named pipe and would otherwise look like a redirect.
 func isTerminal(f *os.File) bool {
 	var mode uint32
 	if err := syscall.GetConsoleMode(syscall.Handle(f.Fd()), &mode); err == nil {
@@ -28,7 +25,6 @@ func isTerminal(f *os.File) bool {
 	return isMinttyPty(f)
 }
 
-// isMinttyPty recognises pipe names like \msys-1888ae32e00d56aa-pty0-to-master.
 func isMinttyPty(f *os.File) bool {
 	var buf [syscall.MAX_PATH*2 + 4]byte
 	ret, _, _ := procGetFileInformationByHandleEx.Call(
@@ -54,13 +50,11 @@ func isMinttyPty(f *os.File) bool {
 
 const enableVirtualTerminalProcessing = 0x0004
 
-// enableANSI switches on VT processing so escape sequences work in conhost and
-// PowerShell, not only in Windows Terminal.
 func enableANSI() {
 	handle := syscall.Handle(os.Stderr.Fd())
 	var mode uint32
 	if err := syscall.GetConsoleMode(handle, &mode); err != nil {
-		return // mintty already speaks ANSI
+		return
 	}
 	if mode&enableVirtualTerminalProcessing == 0 {
 		procSetConsoleMode.Call(uintptr(handle), uintptr(mode|enableVirtualTerminalProcessing))

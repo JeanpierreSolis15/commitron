@@ -37,8 +37,6 @@ func TestCanonical(t *testing.T) {
 func TestRenderSeparatesTheBody(t *testing.T) {
 	cfg := config.Defaults()
 
-	// commitlint's body-leading-blank: exactly one empty line, however the
-	// model formatted it.
 	p, _ := Parse("feat: add the thing\n- one\n- two")
 	want := "feat: add the thing\n\n- one\n- two"
 	if got := p.Render(cfg); got != want {
@@ -101,7 +99,7 @@ func TestViolatesLowerCase(t *testing.T) {
 	tests := map[string]bool{
 		"add the thing":         false,
 		"Add the thing":         true,
-		"OAuth login flow":      false, // acronym-ish, commitlint tolerates it
+		"OAuth login flow":      false,
 		"API returns 404":       false,
 		"PostgreSQL 17 upgrade": false,
 		"":                      false,
@@ -177,7 +175,7 @@ func TestValidateCommitlintRules(t *testing.T) {
 	t.Run("length is measured on what gets committed", func(t *testing.T) {
 		cfg := base
 		cfg.SubjectMaxLength = 25
-		// 26 characters raw, 25 once the full stop goes.
+
 		if hasWarning(t, cfg, "feat: 12345678901234567.", "over the limit") {
 			t.Error("the trailing full stop is removed before measuring")
 		}

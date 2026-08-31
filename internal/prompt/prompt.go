@@ -1,5 +1,3 @@
-// Package prompt renders the instructions sent to the model. The text lives in
-// a template so language, types and project conventions stay data, not code.
 package prompt
 
 import (
@@ -15,7 +13,6 @@ var files embed.FS
 
 var tmpl = template.Must(template.ParseFS(files, "templates/commit.tmpl"))
 
-// Input is everything the template needs that does not come from config.
 type Input struct {
 	Stat     string
 	Diff     string
@@ -38,15 +35,12 @@ type view struct {
 	MaxDiffChars      int
 }
 
-// languages maps the common codes to a name the model understands. Anything
-// else is passed through, so "Brazilian Portuguese" works too.
 var languages = map[string]string{
 	"en": "English", "es": "Spanish", "pt": "Portuguese", "fr": "French",
 	"de": "German", "it": "Italian", "nl": "Dutch", "ja": "Japanese",
 	"ko": "Korean", "zh": "Chinese", "ru": "Russian",
 }
 
-// LanguageName resolves a config language value to a name for the prompt.
 func LanguageName(code string) string {
 	if name, ok := languages[strings.ToLower(strings.TrimSpace(code))]; ok {
 		return name
@@ -54,17 +48,12 @@ func LanguageName(code string) string {
 	return code
 }
 
-// Truncate cuts s to at most max characters. It counts characters rather than
-// bytes, so a diff full of accents gets the budget the config promises and a
-// multi-byte character is never left half-cut. A max of zero or less means no
-// limit. The second result reports whether anything was removed.
 func Truncate(s string, max int) (string, bool) {
-	// A string of max bytes has at most max characters, so this fast path is exact.
 	if max <= 0 || len(s) <= max {
 		return s, false
 	}
 	n := 0
-	for i := range s { // i is the byte offset where each character starts
+	for i := range s {
 		if n == max {
 			return s[:i], true
 		}
@@ -73,7 +62,6 @@ func Truncate(s string, max int) (string, bool) {
 	return s, false
 }
 
-// Build renders the prompt, truncating the diff to the configured budget.
 func Build(cfg config.Config, in Input, instructions string) (string, error) {
 	diff, truncated := Truncate(in.Diff, cfg.MaxDiffChars)
 
@@ -81,8 +69,8 @@ func Build(cfg config.Config, in Input, instructions string) (string, error) {
 		Types:             strings.Join(cfg.Types, ", "),
 		Language:          LanguageName(cfg.Language),
 		SubjectMaxLength:  cfg.SubjectMaxLength,
-		SubjectLower:      cfg.SubjectCase == "lower",
-		ScopeLower:        cfg.ScopeCase == "lower",
+		SubjectLower:      cfg.SubjectCase == config.CaseLower,
+		ScopeLower:        cfg.ScopeCase == config.CaseLower,
 		Body:              cfg.Body,
 		BodyMaxLineLength: cfg.BodyMaxLineLength,
 		Instructions:      instructions,

@@ -4,25 +4,31 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/JeanpierreSolis15/commitron/internal/message"
 )
 
-// Answer is what the user picked at the confirmation prompt.
 type Answer int
 
-// The possible answers to Confirm.
 const (
 	AnswerYes Answer = iota
 	AnswerNo
 	AnswerEdit
-	// AnswerUnavailable means there is no terminal to ask on. Committing anyway
-	// would be a surprise, so the caller must stop and let the user pass --yes.
 	AnswerUnavailable
 )
 
-// Header is the first line: the tool, the model and what is staged.
+type InitAnswer int
+
+const (
+	InitNo InitAnswer = iota
+	InitRepo
+	InitGlobal
+)
+
+var yesAnswers = []string{"", "y", "yes", "s", "si", "sí"}
+
 func (t *Theme) Header(model string, files, added, removed int) string {
 	noun := "files"
 	if files == 1 {
@@ -39,8 +45,6 @@ func (t *Theme) Header(model string, files, added, removed int) string {
 	)
 }
 
-// Message renders the commit message the way it will be committed, indented and
-// with the type highlighted.
 func (t *Theme) Message(p message.Parsed) string {
 	scope := ""
 	if p.Scope != "" {
@@ -51,70 +55,71 @@ func (t *Theme) Message(p message.Parsed) string {
 		bang = t.Bad("!")
 	}
 	out := "  " + t.Accent(p.Type) + scope + bang + t.Dim(":") + " " + t.Head(p.Description)
-
-	if p.Body != "" {
-		var b strings.Builder
-		b.WriteString(out)
-		b.WriteString("\n")
-		for _, line := range strings.Split(p.Body, "\n") {
-			if strings.TrimSpace(line) == "" {
-				b.WriteString("\n")
-				continue
-			}
-			b.WriteString(t.Dim("  "+line) + "\n")
-		}
-		return strings.TrimRight(b.String(), "\n")
+	if p.Body == "" {
+		return out
 	}
-	return out
+
+	var b strings.Builder
+	b.WriteString(out)
+	b.WriteString("\n")
+	for _, line := range strings.Split(p.Body, "\n") {
+		if strings.TrimSpace(line) == "" {
+			b.WriteString("\n")
+			continue
+		}
+		b.WriteString(t.Dim("  "+line) + "\n")
+	}
+	return strings.TrimRight(b.String(), "\n")
 }
 
-// Warn prints a non-blocking warning.
 func (t *Theme) Warn(text string) {
 	fmt.Fprintf(os.Stderr, "  %s %s\n", t.Bad(t.Glyph.Warn), t.Dim(text))
 }
 
-// Confirm asks whether to commit.
 func (t *Theme) Confirm() Answer {
 	if !IsTerminal(os.Stdin) {
 		return AnswerUnavailable
 	}
-	fmt.Fprintf(os.Stderr, "\n  %s %s ", t.Head("commit?"), t.Dim("[Y/n/e=edit]"))
-
-	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
-	if err != nil && line == "" {
-		fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr)
+	answer, ok := t.ask(t.Head("commit?"), t.Dim("[Y/n/e=edit]"))
+	switch {
+	case !ok:
 		return AnswerNo
-	}
-	switch strings.ToLower(strings.TrimSpace(line)) {
-	case "", "y", "yes", "s", "si", "sí":
+	case isYes(answer):
 		return AnswerYes
-	case "e", "edit", "editar":
+	case answer == "e" || answer == "edit" || answer == "editar":
 		return AnswerEdit
 	default:
 		return AnswerNo
 	}
 }
 
-// AskInit offers to create a config file on the first run in a repository.
-// It returns "repo", "global" or "no".
-func (t *Theme) AskInit() string {
+func (t *Theme) AskInit() InitAnswer {
 	if !IsTerminal(os.Stdin) {
-		return "no"
+		return InitNo
 	}
 	fmt.Fprintf(os.Stderr, "  %s %s\n", t.Dim(t.Glyph.Dot), t.Dim("no commitron config in this repository"))
-	fmt.Fprintf(os.Stderr, "  %s %s ", t.Head("create .commitron.json?"), t.Dim("[Y/n/g=global]"))
+	answer, ok := t.ask(t.Head("create .commitron.json?"), t.Dim("[Y/n/g=global]"))
+	switch {
+	case !ok:
+		return InitNo
+	case isYes(answer):
+		return InitRepo
+	case answer == "g" || answer == "global":
+		return InitGlobal
+	default:
+		return InitNo
+	}
+}
 
+func (t *Theme) ask(question, hint string) (string, bool) {
+	fmt.Fprintf(os.Stderr, "  %s %s ", question, hint)
 	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil && line == "" {
 		fmt.Fprintln(os.Stderr)
-		return "no"
+		return "", false
 	}
-	switch strings.ToLower(strings.TrimSpace(line)) {
-	case "", "y", "yes", "s", "si", "sí":
-		return "repo"
-	case "g", "global":
-		return "global"
-	default:
-		return "no"
-	}
+	return strings.ToLower(strings.TrimSpace(line)), true
 }
+
+func isYes(answer string) bool { return slices.Contains(yesAnswers, answer) }

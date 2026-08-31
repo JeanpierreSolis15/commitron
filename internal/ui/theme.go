@@ -1,5 +1,3 @@
-// Package ui draws everything commitron shows. All of it goes to stderr so
-// stdout stays clean for piping.
 package ui
 
 import (
@@ -8,6 +6,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/JeanpierreSolis15/commitron/internal/config"
 )
 
 const (
@@ -17,8 +17,6 @@ const (
 	clearLine  = "\r\x1b[2K"
 )
 
-// Glyphs are the symbols in the output, with an ASCII fallback for terminals
-// that cannot render the nice ones.
 type Glyphs struct {
 	Spark string
 	OK    string
@@ -28,14 +26,12 @@ type Glyphs struct {
 	Minus string
 }
 
-// Theme carries the resolved color and unicode decisions.
 type Theme struct {
 	color   bool
 	Glyph   Glyphs
 	spinner []string
 }
 
-// New resolves "auto", "always" and "never" for color and unicode.
 func New(colorMode, unicodeMode string) *Theme {
 	color := resolve(colorMode, autoColor)
 	if color {
@@ -54,9 +50,9 @@ func New(colorMode, unicodeMode string) *Theme {
 
 func resolve(mode string, auto func() bool) bool {
 	switch mode {
-	case "always":
+	case config.ModeAlways:
 		return true
-	case "never":
+	case config.ModeNever:
 		return false
 	default:
 		return auto()
@@ -64,7 +60,6 @@ func resolve(mode string, auto func() bool) bool {
 }
 
 func autoColor() bool {
-	// NO_COLOR counts only when it has a value (https://no-color.org).
 	if os.Getenv("NO_COLOR") != "" {
 		return false
 	}
@@ -89,7 +84,6 @@ func autoUnicode() bool {
 	return false
 }
 
-// IsTerminal reports whether f is attached to a terminal.
 func IsTerminal(f *os.File) bool { return isTerminal(f) }
 
 func fg(hex string) string {
@@ -116,20 +110,14 @@ func (t *Theme) paint(code, s string) string {
 	return code + s + reset
 }
 
-// Clay is the brand accent used for the spinner and the header mark.
 func (t *Theme) Clay(s string) string { return t.paint(clayCode, s) }
 
-// OK is green: additions and success.
 func (t *Theme) OK(s string) string { return t.paint(okCode, s) }
 
-// Bad is red: deletions and failures.
 func (t *Theme) Bad(s string) string { return t.paint(badCode, s) }
 
-// Accent is amber: the commit type.
 func (t *Theme) Accent(s string) string { return t.paint(accentCode, s) }
 
-// Dim is for secondary text.
 func (t *Theme) Dim(s string) string { return t.paint(dimCode, s) }
 
-// Head is bright white: the text that matters most.
 func (t *Theme) Head(s string) string { return t.paint(headCode, s) }

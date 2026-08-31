@@ -11,8 +11,6 @@ import (
 	"github.com/JeanpierreSolis15/commitron/internal/ui"
 )
 
-// starter is deliberately short. The $schema line gives editors autocomplete and
-// hover docs for every other key, which beats dumping thirty of them here.
 const starter = `{
   "$schema": "` + config.SchemaURL + `",
 
@@ -90,15 +88,12 @@ func writeConfig(path string, full, force bool) (string, error) {
 	return path, nil
 }
 
-// offerInit runs on the first use in a repository with no config anywhere.
-// Declining is remembered only for this run; COMMITRON_NO_INIT=1 or --no-init
-// silences it for good.
 func offerInit(theme *ui.Theme, root string, cfg config.Config, flags commitFlags) (config.Config, error) {
 	var path string
 	switch theme.AskInit() {
-	case "repo":
+	case ui.InitRepo:
 		path = filepath.Join(root, config.FileName)
-	case "global":
+	case ui.InitGlobal:
 		p, err := config.GlobalPath()
 		if err != nil {
 			return cfg, fail("could not find your config directory", err.Error())
@@ -114,15 +109,11 @@ func offerInit(theme *ui.Theme, root string, cfg config.Config, flags commitFlag
 	}
 	fmt.Fprintf(os.Stderr, "  %s %s\n\n", theme.OK(theme.Glyph.OK), theme.Dim("wrote "+written))
 
-	res, err := config.Load(root, flags.configPath)
+	res, err := resolveConfig(root, flags)
 	if err != nil {
-		return cfg, fail("invalid configuration", err.Error())
+		return cfg, err
 	}
-	reloaded := applyFlags(res.Config, flags)
-	if err := reloaded.Validate(); err != nil {
-		return cfg, fail("invalid configuration", err.Error())
-	}
-	return reloaded, nil
+	return res.Config, nil
 }
 
 func runConfig(argv []string) error {
@@ -135,7 +126,7 @@ func runConfig(argv []string) error {
 
 	root, err := gitx.RepoRoot()
 	if err != nil {
-		root = "" // still useful outside a repo: shows defaults plus the global file
+		root = ""
 	}
 	res, err := config.Load(root, configPath)
 	if err != nil {
