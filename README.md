@@ -92,7 +92,7 @@ espera tu respuesta:
 |---|---|
 | `-m, --model <name>` | modelo para esta ejecución (`sonnet`, `opus`, `haiku` o un id de modelo completo) |
 | `-e, --edit` | abre el mensaje en tu editor de git antes de commitear |
-| `-y, --yes` | omite la confirmación |
+| `-y, --yes` | omite la confirmación; si el mensaje aún incumple alguna regla, no commitea |
 | `--dry-run` | imprime el mensaje y se detiene |
 | `--config <path>` | carga un archivo de configuración adicional por encima del resto |
 | `--no-verify` | omite los hooks de git |
@@ -173,6 +173,10 @@ error, no un fallo silencioso. Un proyecto JavaScript puede tenerlo todo en
 - **`types`** — los tipos que el modelo puede usar. Una respuesta con cualquier
   otro se rechaza en lugar de commitearse.
 - **`model`** y **`timeoutSeconds`** — qué modelo responde y cuánto esperar.
+- **`retries`** — cuántas veces se le pide al modelo que corrija una respuesta
+  que incumple alguna regla (asunto demasiado largo, mayúscula inicial, cuerpo
+  que falta…) antes de mostrártela. 1 por defecto; `0` muestra la primera tal
+  cual.
 
 Ejecuta `commitron init --full` para ver todas las claves con su valor por
 defecto.
@@ -198,6 +202,11 @@ reescribiendo el mensaje; el resto, avisándote:
 La división es deliberada: una corrección puramente mecánica se aplica sin
 preguntar, y lo que requiere criterio se deja en tus manos. Pasar `Feat:` a
 minúsculas es seguro; pasar `OAuth` a minúsculas, no.
+
+Cuando la respuesta deja algún aviso, commitron se la devuelve al modelo con la
+lista de problemas y le pide una corrección (`retries`, 1 por defecto). Si aun
+así queda alguno, en modo interactivo lo ves junto al mensaje y decides; con
+`--yes` o `"confirm": false` no se commitea, porque nadie lo va a revisar.
 
 commitron no sustituye a commitlint. Con `verify: true` (el valor por defecto) tu
 propio hook `commit-msg` sigue ejecutándose y tiene la última palabra — la idea
