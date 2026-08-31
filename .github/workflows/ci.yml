@@ -90,7 +90,7 @@ jobs:
       - name: Check syntax
         run: |
           node --check npm/bin/commitron.js
-          node --check npm/install.js
+          node --check npm/lib/download.js
           node --check npm/lib/platform.js
 
       - name: Check package contents
@@ -98,7 +98,7 @@ jobs:
         run: npm pack --dry-run
 
       # The launcher must find and run a binary in npm/vendor, which is where
-      # install.js puts the downloaded release.
+      # lib/download.js puts the release binary on the first run.
       - name: Run the launcher against a local build
         run: |
           mkdir -p npm/vendor

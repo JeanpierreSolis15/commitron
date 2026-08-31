@@ -48,10 +48,11 @@ git add -p
 
 ### The npm package
 
-`npm/` holds a small Node launcher. `install.js` runs on `npm install`, downloads
-the release binary for the current platform from GitHub and checks it against
-`checksums.txt`; `bin/commitron.js` then runs it. To exercise the launcher
-without a release, put a local build where the installer would:
+`npm/` holds a small Node launcher. On the first run, `bin/commitron.js`
+downloads the release binary for the current platform from GitHub
+(`lib/download.js`), checks it against `checksums.txt` and runs it. There are no
+install scripts: npm 12 no longer runs them by default. To exercise the launcher
+without a release, put a local build where the download would:
 
 ```sh
 mkdir -p npm/vendor

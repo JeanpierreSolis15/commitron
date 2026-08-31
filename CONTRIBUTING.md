@@ -48,11 +48,12 @@ git add -p
 
 ### El paquete npm
 
-`npm/` contiene un pequeño lanzador en Node. `install.js` se ejecuta en
-`npm install`, descarga desde GitHub el binario de la release para la plataforma
-actual y lo comprueba contra `checksums.txt`; después `bin/commitron.js` lo
-ejecuta. Para probar el lanzador sin una release, deja un build local donde lo
-pondría el instalador:
+`npm/` contiene un pequeño lanzador en Node. En la primera ejecución,
+`bin/commitron.js` descarga desde GitHub el binario de la release para la
+plataforma actual (`lib/download.js`), lo comprueba contra `checksums.txt` y lo
+ejecuta. No hay scripts de instalación: npm 12 ya no los ejecuta por defecto.
+Para probar el lanzador sin una release, deja un build local donde lo pondría la
+descarga:
 
 ```sh
 mkdir -p npm/vendor

@@ -35,8 +35,10 @@ sin pagar dos veces: si `claude` funciona en tu máquina, esto también.
 
 ### npm
 
-Funciona en macOS, Linux y Windows con Node 18 o superior. El paquete descarga el
-binario de tu plataforma desde la release de GitHub y verifica su checksum.
+Funciona en macOS, Linux y Windows con Node 18 o superior. La primera vez que lo
+ejecutas descarga el binario de tu plataforma desde la release de GitHub y
+verifica su checksum. No usa scripts de instalación, así que funciona igual con
+npm 12 y con `--ignore-scripts`.
 
 ```sh
 npm install -g commitron

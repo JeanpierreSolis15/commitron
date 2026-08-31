@@ -35,8 +35,10 @@ already have. No API key, no account to create, nothing to pay for twice: if
 
 ### npm
 
-Works on macOS, Linux and Windows with Node 18 or newer. The package downloads
-the binary for your platform from the GitHub release and verifies its checksum.
+Works on macOS, Linux and Windows with Node 18 or newer. On the first run it
+downloads the binary for your platform from the GitHub release and verifies its
+checksum. There are no install scripts, so it works the same with npm 12 and
+with `--ignore-scripts`.
 
 ```sh
 npm install -g commitron
