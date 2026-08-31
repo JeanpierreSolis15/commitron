@@ -32,8 +32,23 @@ describe("main", () => {
   it("reports a bad flag with exit code 1", async () => {
     const { ctx, terminal } = context();
     expect(await main(["--bogus"], ctx)).toBe(1);
-    expect(terminal.stderr).toContain("commitron:");
+    expect(terminal.stderr).toContain('commitron: unknown flag --bogus for "commitron"');
     expect(terminal.stderr).toContain("--help");
+  });
+
+  it("tells a main-command flag apart from a subcommand's", async () => {
+    const { ctx, terminal } = context();
+    expect(await main(["config", "--color", "never"], ctx)).toBe(1);
+    expect(terminal.stderr).toContain('unknown flag --color for "commitron config"');
+    expect(terminal.stderr).toContain("commitron config accepts: --config <value>");
+  });
+
+  it("lists the flags of every command in the usage", async () => {
+    const { ctx, terminal } = context();
+    await main(["help"], ctx);
+    expect(terminal.stdout).toContain("Flags of commitron:");
+    expect(terminal.stdout).toContain("Flags of commitron init:");
+    expect(terminal.stdout).toContain("Flags of commitron config:");
   });
 
   it("shows the resolved config and where it came from", async () => {

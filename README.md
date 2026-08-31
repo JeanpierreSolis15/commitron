@@ -118,6 +118,9 @@ commitron config         # qué está en vigor y de dónde sale cada valor
 commitron version
 ```
 
+Cada comando acepta solo sus propios flags (`init` tiene `--global`, `--full` y
+`--force`; `config` solo `--config`); `commitron --help` los lista todos.
+
 ## Configuración
 
 La primera ejecución en un repositorio ofrece crear `.commitron.json`. También

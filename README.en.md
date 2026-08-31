@@ -118,6 +118,9 @@ commitron config         # what is in effect, and where each value came from
 commitron version
 ```
 
+Each command accepts only its own flags (`init` has `--global`, `--full` and
+`--force`; `config` only `--config`); `commitron --help` lists them all.
+
 ## Configure
 
 The first run in a repository offers to create `.commitron.json`. You can also
