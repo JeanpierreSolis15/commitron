@@ -122,6 +122,14 @@ The Release workflow then:
   refuses the unscoped name, switch to a scoped one such as
   `@jeanpierresolis15/commitron`; nothing else needs to change.
 - **Homebrew and Scoop** are optional and documented in `.goreleaser.yaml`.
+- **Badges.** The release and npm badges only render once something is published,
+  so they are not in the READMEs yet. After the first release, add these two under
+  the CI badge in `README.md` and `README.en.md`:
+
+  ```markdown
+  [![Release](https://img.shields.io/github/v/release/JeanpierreSolis15/commitron?sort=semver)](https://github.com/JeanpierreSolis15/commitron/releases)
+  [![npm](https://img.shields.io/npm/v/commitron)](https://www.npmjs.com/package/commitron)
+  ```
 
 ## Reporting problems
 

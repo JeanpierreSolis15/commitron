@@ -1,8 +1,6 @@
 # commitron
 
 [![CI](https://github.com/JeanpierreSolis15/commitron/actions/workflows/ci.yml/badge.svg)](https://github.com/JeanpierreSolis15/commitron/actions/workflows/ci.yml)
-[![Release](https://github.com/JeanpierreSolis15/commitron/actions/workflows/release.yml/badge.svg)](https://github.com/JeanpierreSolis15/commitron/releases)
-[![npm](https://img.shields.io/npm/v/commitron)](https://www.npmjs.com/package/commitron)
 [![Go](https://img.shields.io/github/go-mod/go-version/JeanpierreSolis15/commitron)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
