@@ -2,17 +2,34 @@ import { createInterface } from "node:readline";
 import type { Environment } from "../../app/ports";
 import type { Capabilities, Streams, Terminal } from "../../ui/terminal";
 
-type Stream = NodeJS.ReadStream | NodeJS.WriteStream;
+interface Input extends NodeJS.ReadableStream {
+  isTTY?: boolean;
+}
+
+interface Output {
+  isTTY?: boolean;
+  write(text: string): unknown;
+}
+
+export interface StandardStreams {
+  stdin: Input;
+  stdout: Output;
+  stderr: Output;
+}
 
 export class NodeTerminal implements Terminal {
   readonly tty: Streams;
   readonly supports: Capabilities;
 
-  constructor(environment: Environment) {
+  constructor(
+    environment: Environment,
+    private readonly streams: StandardStreams = process,
+  ) {
+    const interactive = (stream: Input | Output) => isTerminal(stream, environment, streams);
     this.tty = {
-      stdin: isTerminal(process.stdin, environment),
-      stdout: isTerminal(process.stdout, environment),
-      stderr: isTerminal(process.stderr, environment),
+      stdin: interactive(streams.stdin),
+      stdout: interactive(streams.stdout),
+      stderr: interactive(streams.stderr),
     };
     this.supports = {
       color: autoColor(environment, this.tty.stderr),
@@ -21,38 +38,49 @@ export class NodeTerminal implements Terminal {
   }
 
   out(text: string): void {
-    process.stdout.write(text);
+    this.streams.stdout.write(text);
   }
 
   err(text: string): void {
-    process.stderr.write(text);
+    this.streams.stderr.write(text);
   }
 
   ask(question: string, signal: AbortSignal): Promise<string | null> {
-    process.stderr.write(question);
-    const rl = createInterface({ input: process.stdin, terminal: false });
+    this.streams.stderr.write(question);
+    const rl = createInterface({ input: this.streams.stdin, terminal: false });
     return new Promise((resolve) => {
+      let settled = false;
       const finish = (line: string | null) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
         signal.removeEventListener("abort", onAbort);
+        rl.off("close", onClose);
         rl.close();
         if (line === null) {
-          process.stderr.write("\n");
+          this.streams.stderr.write("\n");
         }
         resolve(line);
       };
       const onAbort = () => finish(null);
+      const onClose = () => finish(null);
       signal.addEventListener("abort", onAbort, { once: true });
-      rl.once("line", (line) => finish(line));
-      rl.once("close", () => finish(null));
+      rl.once("line", finish);
+      rl.once("close", onClose);
     });
   }
 }
 
-function isTerminal(stream: Stream, { platform, variables }: Environment): boolean {
-  if (stream.isTTY) {
+function isTerminal(
+  stream: Input | Output,
+  { platform, variables }: Environment,
+  streams: StandardStreams,
+): boolean {
+  if (stream.isTTY === true) {
     return true;
   }
-  return platform === "win32" && variables.TERM_PROGRAM === "mintty" && stream !== process.stdout;
+  return platform === "win32" && variables.TERM_PROGRAM === "mintty" && stream !== streams.stdout;
 }
 
 function autoColor({ variables }: Environment, stderrIsTerminal: boolean): boolean {
