@@ -58,15 +58,46 @@ describe("parseCommitFlags", () => {
     expect(parseCommitFlags([flag]).version).toBe(true);
   });
 
-  it("turns an unknown flag into a failure with a hint", () => {
-    expect(() => parseCommitFlags(["--bogus"])).toThrow(Failure);
-    try {
-      parseCommitFlags(["--bogus"]);
-    } catch (err) {
-      expect((err as Failure).detail).toContain("--help");
-    }
+  it("names an unknown flag, the command and the flags it does accept", () => {
+    const failure = capture(() => parseCommitFlags(["--bogus"]));
+    expect(failure.message).toBe('unknown flag --bogus for "commitron"');
+    expect(failure.detail).toContain("commitron accepts: -m, --model <value>, --config <value>");
+    expect(failure.detail).toContain("--help");
+  });
+
+  it("keeps the parser's message for a missing value", () => {
+    const failure = capture(() => parseCommitFlags(["--model"]));
+    expect(failure.message).toContain("--model");
+    expect(failure.message).not.toContain("To specify");
+    expect(failure.detail).toContain("commitron accepts:");
   });
 });
+
+describe("flags are per command", () => {
+  it("rejects a main-command flag on init", () => {
+    const failure = capture(() => parseInitFlags(["--color", "never"]));
+    expect(failure.message).toBe('unknown flag --color for "commitron init"');
+    expect(failure.detail).toContain("commitron init accepts: --global, --full, --force");
+  });
+
+  it("rejects a main-command flag on config", () => {
+    const failure = capture(() => parseConfigFlags(["--color", "never"]));
+    expect(failure.message).toBe('unknown flag --color for "commitron config"');
+    expect(failure.detail).toContain("commitron config accepts: --config <value>");
+  });
+});
+
+function capture(run: () => unknown): Failure {
+  try {
+    run();
+  } catch (err) {
+    if (err instanceof Failure) {
+      return err;
+    }
+    throw err;
+  }
+  throw new Error("expected a failure");
+}
 
 describe("parseInitFlags", () => {
   it("maps the init flags", () => {

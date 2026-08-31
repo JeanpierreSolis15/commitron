@@ -1,6 +1,6 @@
 import { parseArgs, type ParseArgsConfig } from "node:util";
 import type { CommitCommand } from "../app/commit";
-import { fail } from "../app/errors";
+import { fail, type Failure } from "../app/errors";
 import type { InitCommand } from "../app/init";
 import { errorMessage } from "../utils/errors";
 
@@ -9,8 +9,10 @@ export interface CommitFlags extends CommitCommand {
   version: boolean;
 }
 
+type Options = NonNullable<ParseArgsConfig["options"]>;
+
 export function parseCommitFlags(argv: string[]): CommitFlags {
-  const values = parseFlags(argv, {
+  const values = parseFlags(argv, "commitron", {
     model: { type: "string", short: "m" },
     config: { type: "string" },
     color: { type: "string" },
@@ -37,7 +39,7 @@ export function parseCommitFlags(argv: string[]): CommitFlags {
 }
 
 export function parseInitFlags(argv: string[]): InitCommand {
-  const values = parseFlags(argv, {
+  const values = parseFlags(argv, "commitron init", {
     global: { type: "boolean" },
     full: { type: "boolean" },
     force: { type: "boolean" },
@@ -50,17 +52,38 @@ export function parseInitFlags(argv: string[]): InitCommand {
 }
 
 export function parseConfigFlags(argv: string[]): { configPath: string } {
-  const values = parseFlags(argv, { config: { type: "string" } });
+  const values = parseFlags(argv, "commitron config", { config: { type: "string" } });
   return { configPath: values.config ?? "" };
 }
 
-function parseFlags<T extends ParseArgsConfig["options"]>(
+function parseFlags<T extends Options>(
   argv: string[],
+  command: string,
   options: T,
 ): ReturnType<typeof parseArgs<{ args: string[]; options: T; allowPositionals: true }>>["values"] {
   try {
     return parseArgs({ args: argv, options, allowPositionals: true, strict: true }).values;
   } catch (err) {
-    throw fail(errorMessage(err), "run `commitron --help` to see the flags");
+    throw flagFailure(err, command, options);
   }
+}
+
+function flagFailure(err: unknown, command: string, options: Options): Failure {
+  const hint = `${command} accepts: ${describe(options)}\nrun \`commitron --help\` to see every command's flags`;
+  const message = errorMessage(err);
+  if ((err as NodeJS.ErrnoException).code === "ERR_PARSE_ARGS_UNKNOWN_OPTION") {
+    const flag = /Unknown option '([^']+)'/.exec(message)?.[1] ?? "flag";
+    return fail(`unknown flag ${flag} for "${command}"`, hint);
+  }
+  return fail(message.replace(/\.\s*To specify[\s\S]*$/, ""), hint);
+}
+
+function describe(options: Options): string {
+  return Object.entries(options)
+    .map(([name, option]) => {
+      const short = option.short ? `-${option.short}, ` : "";
+      const value = option.type === "string" ? " <value>" : "";
+      return `${short}--${name}${value}`;
+    })
+    .join(", ");
 }
