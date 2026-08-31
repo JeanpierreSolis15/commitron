@@ -1,14 +1,17 @@
 import { truncate } from "../../utils/text";
 import type { Config } from "../config";
+import { canonicalExamples, typeDescriptions } from "./glossary";
 import { languageName } from "./languages";
 
 export interface PromptInput {
   stat: string;
   diff: string;
   excluded: string[];
+  instructions: string;
+  history: string[];
 }
 
-export function buildPrompt(config: Config, input: PromptInput, instructions: string): string {
+export function buildPrompt(config: Config, input: PromptInput): string {
   const [diff, truncated] = truncate(input.diff, config.maxDiffChars);
   const lines: string[] = [];
   const add = (...text: string[]) => lines.push(...text);
@@ -21,10 +24,18 @@ export function buildPrompt(config: Config, input: PromptInput, instructions: st
     "Subject line",
     '- Shape: "type(scope): description". The scope is optional; never write empty',
     '  parentheses, "type(): ..." or a placeholder scope.',
-    `- Allowed types: ${config.types.join(", ")}. Pick exactly one, in lowercase.`,
+    `- Allowed types: ${config.types.join(", ")}. Pick exactly one, in lowercase, by what`,
+    "  the change does:",
+    ...config.types.map(describeType),
   );
   if (config.scopeCase === "lower") {
     add("- The scope, when there is one, is lowercase and names an area of the codebase.");
+  }
+  if (config.scopes.length > 0) {
+    add(
+      `- Allowed scopes: ${config.scopes.join(", ")}. Use one of them or none; never invent`,
+      "  another.",
+    );
   }
   add(
     `- Write the description in ${languageName(config.language)}, imperative mood: "add", never "added",`,
@@ -75,15 +86,8 @@ export function buildPrompt(config: Config, input: PromptInput, instructions: st
     '  counts, no co-authors, no "Generated with" lines, no other footers.',
     "- Reply with ONLY the final message, wrapped exactly in <commit> and </commit>.",
   );
-  if (instructions) {
-    add(
-      "",
-      "## Project conventions",
-      "These come from the repository and take precedence over the generic rules above.",
-      "",
-      instructions,
-    );
-  }
+  addConventions(add, config, input);
+  addExamples(add, config, input);
   add("", "## Files changed", input.stat.replace(/\n+$/, ""));
   if (input.excluded.length > 0) {
     add(`Changed but not shown below (excluded by configuration): ${input.excluded.join(", ")}`);
@@ -95,4 +99,48 @@ export function buildPrompt(config: Config, input: PromptInput, instructions: st
     "",
   );
   return lines.join("\n");
+}
+
+type Add = (...text: string[]) => void;
+
+function describeType(type: string): string {
+  const description = typeDescriptions[type];
+  return description ? `  ${type}: ${description}` : `  ${type}`;
+}
+
+function addConventions(add: Add, config: Config, input: PromptInput): void {
+  if (config.guidelines.length === 0 && !input.instructions) {
+    return;
+  }
+  add(
+    "",
+    "## Project conventions",
+    "These come from the repository and take precedence over the generic rules above.",
+    "",
+  );
+  if (config.guidelines.length > 0) {
+    add(...config.guidelines.map((guideline) => `- ${guideline}`));
+  }
+  if (input.instructions) {
+    if (config.guidelines.length > 0) {
+      add("");
+    }
+    add(input.instructions);
+  }
+}
+
+function addExamples(add: Add, config: Config, input: PromptInput): void {
+  const examples = [...config.examples, ...input.history];
+  add("", "## Examples");
+  if (examples.length > 0) {
+    add(
+      "Match the shape and tone of these messages from this repository when they follow",
+      "the rules above; where they disagree, the rules win.",
+    );
+  } else {
+    add("Two messages with the expected shape:");
+  }
+  for (const example of examples.length > 0 ? examples : canonicalExamples) {
+    add("", "<example>", example.trim(), "</example>");
+  }
 }

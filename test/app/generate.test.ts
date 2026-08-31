@@ -81,6 +81,30 @@ describe("generateMessage", () => {
     expect(steps).toEqual(["reading staged changes", "asking sonnet", "validating"]);
   });
 
+  it("feeds the recent commits to the model as examples", async () => {
+    const w = world();
+    w.git.history = ["fix(api): reject stale sessions", "docs: explain the flags"];
+    await generateMessage(w.deps, root, defaults(), status, signal());
+    const prompt = w.provider.requests[0]?.prompt ?? "";
+    expect(prompt).toContain("<example>\nfix(api): reject stale sessions\n</example>");
+    expect(prompt).toContain("docs: explain the flags");
+  });
+
+  it("leaves the history out when it is turned off", async () => {
+    const w = world();
+    w.git.history = ["fix(api): reject stale sessions"];
+    await generateMessage(w.deps, root, { ...defaults(), history: 0 }, status, signal());
+    expect(w.provider.requests[0]?.prompt).not.toContain("reject stale sessions");
+  });
+
+  it("carries on when git cannot list the history", async () => {
+    const w = world();
+    w.git.history = new Error("does not have any commits yet");
+    await expect(
+      generateMessage(w.deps, root, defaults(), status, signal()),
+    ).resolves.toMatchObject({ text: "feat: add the thing" });
+  });
+
   it("warns about missing instructions but carries on", async () => {
     const w = world();
     const config = { ...defaults(), instructions: "missing.md" };

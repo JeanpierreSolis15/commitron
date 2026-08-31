@@ -45,6 +45,7 @@ export class FakeGit implements GitClient {
   stat = " a.ts | 4 ++-\n 1 file changed, 3 insertions(+), 1 deletion(-)\n";
   diff = "diff --git a/a.ts b/a.ts\n+hello\n";
   excluded: string[] = [];
+  history: string[] | Error = [];
   readonly commits: { message: string; options: CommitOptions }[] = [];
 
   repoRoot(): string {
@@ -68,6 +69,13 @@ export class FakeGit implements GitClient {
 
   excludedFiles(exclude: string[]): string[] {
     return exclude.length === 0 ? [] : this.excluded;
+  }
+
+  recentMessages(count: number): string[] {
+    if (this.history instanceof Error) {
+      throw this.history;
+    }
+    return this.history.slice(0, count);
   }
 
   commit(message: string, options: CommitOptions): string {

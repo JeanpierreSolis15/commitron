@@ -28,6 +28,9 @@ export function validateConfig(c: Config): void {
   if (c.maxDiffChars < 500) {
     throw new Error(`maxDiffChars: ${c.maxDiffChars} is too low, use at least 500`);
   }
+  if (c.history < 0) {
+    throw new Error("history: cannot be negative");
+  }
   if (c.instructionsMaxChars < 0) {
     throw new Error("instructionsMaxChars: cannot be negative");
   }

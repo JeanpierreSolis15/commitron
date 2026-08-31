@@ -1,11 +1,14 @@
 import { runeCount } from "../../utils/text";
-import { allowsType, type Config } from "../config";
+import { allowsScope, allowsType, type Config } from "../config";
 import type { Parsed } from "./message";
 import { canonical, hasUpper, violatesLowerCase, wrapBody } from "./normalize";
 
 export function validateMessage(p: Parsed, config: Config): string[] {
   if (!allowsType(config, p.type)) {
     throw new Error(`"${p.type}" is not an allowed type (${config.types.join(", ")})`);
+  }
+  if (!allowsScope(config, p.scope)) {
+    throw new Error(`"${p.scope}" is not an allowed scope (${config.scopes.join(", ")})`);
   }
 
   const warnings: string[] = [];

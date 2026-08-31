@@ -19,8 +19,8 @@ sin pagar dos veces: si `claude` funciona en tu máquina, esto también.
 - **Conventional Commits de serie.** Los valores por defecto replican
   `@commitlint/config-conventional`, así que el mensaje pasa tu hook de commitlint
   tal cual.
-- **Conoce tu proyecto.** Apúntalo a un `CONTRIBUTING.md` y sus reglas prevalecen
-  sobre las genéricas.
+- **Conoce tu proyecto.** Aprende de tus últimos commits, y tus reglas, scopes y
+  ejemplos en `.commitron.json` prevalecen sobre las genéricas.
 - **Cualquier lenguaje, cualquier repositorio.** Solo necesita Node y no arrastra
   ninguna dependencia. Lee `git`, no `package.json`.
 - **Tus palabras, tu decisión.** Te muestra el mensaje y tú confirmas, editas o
@@ -128,9 +128,9 @@ puedes escribirlo tú:
   "$schema": "https://raw.githubusercontent.com/JeanpierreSolis15/commitron/main/schema.json",
   "model": "sonnet",
   "language": "es",
-  "subjectMaxLength": 72,
-  "exclude": ["pnpm-lock.yaml"],
-  "instructions": "CONTRIBUTING.md"
+  "scopes": ["api", "web", "infra"],
+  "guidelines": ["Prefix the description with the Jira ticket from the branch name, e.g. ABC-123"],
+  "exclude": ["pnpm-lock.yaml"]
 }
 ```
 
@@ -153,9 +153,19 @@ error, no un fallo silencioso. Un proyecto JavaScript puede tenerlo todo en
 - **`language`** — idioma de la descripción (`en`, `es`, o un nombre completo
   como `"Brazilian Portuguese"`). El tipo de Conventional Commits se mantiene en
   inglés.
-- **`instructions`** — un archivo Markdown con las convenciones de tu proyecto.
-  Su contenido prevalece sobre las reglas genéricas, y es lo que hace útil a
-  commitron en un repositorio cuyas reglas no conoce.
+- **`guidelines`** — tus reglas en texto, una por entrada: "usa el ticket de la
+  rama como prefijo", "nunca menciones archivos en el asunto". Van al prompt por
+  encima de las reglas genéricas, y es lo que hace útil a commitron en un
+  repositorio con convenciones propias.
+- **`scopes`** — los scopes permitidos, como `scope-enum` de commitlint. Vacío
+  significa cualquiera; si lo defines, una respuesta con otro scope se rechaza
+  (una sin scope sigue valiendo).
+- **`examples`** y **`history`** — mensajes de tu proyecto que el modelo debe
+  imitar. `examples` los escribes tú; `history` (10 por defecto) toma los últimos
+  commits del repositorio. Las reglas mandan cuando el historial las contradice;
+  `"history": 0` lo apaga.
+- **`instructions`** — opcional: la ruta a un Markdown que ya tengas con las
+  convenciones, como `CONTRIBUTING.md`, para no duplicarlas en el JSON.
 - **`exclude`** — pathspecs de git que se dejan fuera del diff. Los lockfiles se
   excluyen por defecto: un `pnpm-lock.yaml` puede tener 10.000 líneas y dejaría
   tu cambio real fuera del presupuesto del modelo. Esos archivos siguen apareciendo
@@ -195,8 +205,8 @@ es que no le quede nada de lo que quejarse.
 
 ## Cómo funciona
 
-1. lee `git diff --cached`, sin las rutas excluidas
-2. renderiza un prompt con tu configuración y tus convenciones
+1. lee `git diff --cached`, sin las rutas excluidas, y tus últimos commits
+2. renderiza un prompt con tu configuración, tus convenciones y esos ejemplos
 3. se lo pasa por pipe a `claude -p --model <model> --strict-mcp-config`
 4. desenvuelve, parsea y valida la respuesta
 5. lo muestra y commitea con `git commit -F`

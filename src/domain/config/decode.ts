@@ -1,7 +1,7 @@
 import { isRecord } from "../../utils/guards";
 import type { Config, ConfigKey } from "./config";
 
-type Kind = "string" | "integer" | "boolean" | "strings";
+type Kind = "string" | "integer" | "boolean" | "strings" | "lines";
 
 const fields: Record<ConfigKey, Kind> = {
   $schema: "string",
@@ -12,6 +12,7 @@ const fields: Record<ConfigKey, Kind> = {
   extraArgs: "strings",
   language: "string",
   types: "strings",
+  scopes: "strings",
   subjectMaxLength: "integer",
   subjectCase: "string",
   scopeCase: "string",
@@ -19,6 +20,9 @@ const fields: Record<ConfigKey, Kind> = {
   bodyMaxLineLength: "integer",
   maxDiffChars: "integer",
   exclude: "strings",
+  guidelines: "lines",
+  examples: "strings",
+  history: "integer",
   instructions: "string",
   instructionsMaxChars: "integer",
   confirm: "boolean",
@@ -39,7 +43,7 @@ export function decodeConfig(base: Config, source: string | unknown): Config {
     }
     const kind = fields[key as ConfigKey];
     if (value === null) {
-      if (kind === "strings") {
+      if (kind === "strings" || kind === "lines") {
         out[key] = [];
       }
       continue;
@@ -67,9 +71,21 @@ function coerce(key: string, kind: Kind, value: unknown): unknown {
       }
       return value;
     case "strings":
-      if (!Array.isArray(value) || !value.every((item) => typeof item === "string")) {
+      if (!isStringArray(value)) {
         throw new Error(`${key}: expected an array of strings`);
       }
       return [...value];
+    case "lines":
+      if (typeof value === "string") {
+        return [value];
+      }
+      if (!isStringArray(value)) {
+        throw new Error(`${key}: expected a string or an array of strings`);
+      }
+      return [...value];
   }
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
 }

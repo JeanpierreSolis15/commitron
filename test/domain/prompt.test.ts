@@ -3,7 +3,7 @@ import { defaults } from "../../src/domain/config";
 import { buildPrompt, languageName, type PromptInput } from "../../src/domain/prompt";
 import { truncate } from "../../src/utils/text";
 
-const empty: PromptInput = { stat: "", diff: "", excluded: [] };
+const empty: PromptInput = { stat: "", diff: "", excluded: [], instructions: "", history: [] };
 
 describe("languageName", () => {
   it.each([
@@ -20,8 +20,7 @@ describe("buildPrompt", () => {
   it("includes the contract", () => {
     const out = buildPrompt(
       { ...defaults(), language: "es", subjectMaxLength: 60 },
-      { stat: "a.go | 2 +-", diff: "diff --git a/a.go", excluded: [] },
-      "",
+      { ...empty, stat: "a.go | 2 +-", diff: "diff --git a/a.go" },
     );
     for (const want of [
       "Spanish",
@@ -35,18 +34,36 @@ describe("buildPrompt", () => {
     }
   });
 
+  it("explains what each type means", () => {
+    const out = buildPrompt(defaults(), empty);
+    expect(out).toContain("  feat: a new feature");
+    expect(out).toContain("  refactor: a code change that neither fixes a bug nor adds a feature");
+  });
+
+  it("lists a custom type without a description", () => {
+    const out = buildPrompt({ ...defaults(), types: ["feat", "wip"] }, empty);
+    expect(out.split("\n")).toContain("  wip");
+    expect(out).not.toContain("  fix:");
+  });
+
+  it("lists the allowed scopes only when they are configured", () => {
+    expect(buildPrompt(defaults(), empty)).not.toContain("Allowed scopes");
+    expect(buildPrompt({ ...defaults(), scopes: ["api", "web"] }, empty)).toContain(
+      "Allowed scopes: api, web",
+    );
+  });
+
   it("truncates the diff and says so", () => {
     const out = buildPrompt(
       { ...defaults(), maxDiffChars: 1000 },
       { ...empty, diff: "Z".repeat(5000) },
-      "",
     );
     expect(out).toContain("truncated to 1000 characters");
     expect(out.split("Z").length - 1).toBe(1000);
   });
 
   it("omits the truncation note when the diff fits", () => {
-    expect(buildPrompt(defaults(), { ...empty, diff: "small" }, "")).not.toContain("truncated");
+    expect(buildPrompt(defaults(), { ...empty, diff: "small" })).not.toContain("truncated");
   });
 
   it.each([
@@ -54,28 +71,57 @@ describe("buildPrompt", () => {
     ["always", "Always write one."],
     ["auto", "only when the change has several distinct parts"],
   ] as const)("body=%s", (mode, want) => {
-    expect(buildPrompt({ ...defaults(), body: mode }, empty, "")).toContain(want);
+    expect(buildPrompt({ ...defaults(), body: mode }, empty)).toContain(want);
   });
 
-  it("includes instructions and exclusions", () => {
-    const out = buildPrompt(
-      defaults(),
-      { ...empty, diff: "d", excluded: ["pnpm-lock.yaml", "a.snap"] },
-      "Commit messages must mention the ticket.",
-    );
+  it("puts the guidelines in the conventions section", () => {
+    const out = buildPrompt({ ...defaults(), guidelines: ["Mention the ticket."] }, empty);
+    expect(out).toContain("## Project conventions");
+    expect(out).toContain("- Mention the ticket.");
+  });
+
+  it("includes the instructions file and the exclusions", () => {
+    const out = buildPrompt(defaults(), {
+      ...empty,
+      diff: "d",
+      excluded: ["pnpm-lock.yaml", "a.snap"],
+      instructions: "Commit messages must mention the ticket.",
+    });
     expect(out).toContain("Project conventions");
     expect(out).toContain("must mention the ticket");
     expect(out).toContain("pnpm-lock.yaml, a.snap");
   });
 
-  it("has no empty conventions section", () => {
-    expect(buildPrompt(defaults(), { ...empty, diff: "d" }, "")).not.toContain(
-      "Project conventions",
+  it("combines guidelines with the instructions file", () => {
+    const out = buildPrompt(
+      { ...defaults(), guidelines: ["One rule."] },
+      { ...empty, instructions: "Long conventions." },
     );
+    expect(out).toContain("- One rule.\n\nLong conventions.");
+  });
+
+  it("has no empty conventions section", () => {
+    expect(buildPrompt(defaults(), { ...empty, diff: "d" })).not.toContain("Project conventions");
+  });
+
+  it("shows the project examples and the recent history", () => {
+    const out = buildPrompt(
+      { ...defaults(), examples: ["feat(api): add the refund endpoint"] },
+      { ...empty, history: ["fix(web): keep the modal open\n\n- one"] },
+    );
+    expect(out).toContain("<example>\nfeat(api): add the refund endpoint\n</example>");
+    expect(out).toContain("<example>\nfix(web): keep the modal open\n\n- one\n</example>");
+    expect(out).not.toContain("add Polish language");
+  });
+
+  it("falls back to canonical examples", () => {
+    const out = buildPrompt(defaults(), empty);
+    expect(out).toContain("## Examples");
+    expect(out).toContain("<example>\nfeat(lang): add Polish language\n</example>");
   });
 
   it("includes the case and wrap rules", () => {
-    const out = buildPrompt(defaults(), { ...empty, diff: "d" }, "");
+    const out = buildPrompt(defaults(), { ...empty, diff: "d" });
     for (const want of [
       "Start the description with a lowercase letter",
       "The scope, when there is one, is lowercase",
@@ -89,7 +135,6 @@ describe("buildPrompt", () => {
     const out = buildPrompt(
       { ...defaults(), subjectCase: "any", scopeCase: "any", bodyMaxLineLength: 0 },
       { ...empty, diff: "d" },
-      "",
     );
     for (const unwanted of [
       "Start the description with a lowercase letter",
@@ -104,7 +149,6 @@ describe("buildPrompt", () => {
     const out = buildPrompt(
       { ...defaults(), maxDiffChars: 1000 },
       { ...empty, diff: "ñ".repeat(5000) },
-      "",
     );
     expect(out.split("ñ").length - 1).toBe(1000);
   });

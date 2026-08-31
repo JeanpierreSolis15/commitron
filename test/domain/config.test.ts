@@ -83,6 +83,33 @@ describe("decodeConfig", () => {
   it("accepts the $schema key", () => {
     expect(() => decodeConfig(defaults(), `{"$schema":"${SCHEMA_URL}"}`)).not.toThrow();
   });
+
+  it("accepts guidelines as one string or as a list", () => {
+    expect(decodeConfig(defaults(), `{"guidelines":"Mention the ticket."}`).guidelines).toEqual([
+      "Mention the ticket.",
+    ]);
+    expect(decodeConfig(defaults(), `{"guidelines":["a","b"]}`).guidelines).toEqual(["a", "b"]);
+    expect(() => decodeConfig(defaults(), `{"guidelines":5}`)).toThrow(/guidelines/);
+  });
+
+  it("reads scopes, examples and history", () => {
+    const cfg = decodeConfig(
+      defaults(),
+      `{"scopes":["api"],"examples":["feat(api): add x"],"history":3}`,
+    );
+    expect(cfg.scopes).toEqual(["api"]);
+    expect(cfg.examples).toEqual(["feat(api): add x"]);
+    expect(cfg.history).toBe(3);
+    expect(() => decodeConfig(defaults(), `{"history":"3"}`)).toThrow(/history/);
+  });
+});
+
+describe("the new defaults", () => {
+  it("allow any scope, learn from ten commits and reject a negative history", () => {
+    expect(defaults().scopes).toEqual([]);
+    expect(defaults().history).toBe(10);
+    expect(() => validateConfig({ ...defaults(), history: -1 })).toThrow(/history/);
+  });
 });
 
 describe("serialize", () => {

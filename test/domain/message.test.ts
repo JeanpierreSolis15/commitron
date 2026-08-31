@@ -84,6 +84,16 @@ describe("validateMessage", () => {
     expect(validateMessage(parse("feat: add the thing")!, cfg)).toEqual([]);
   });
 
+  it("enforces the scope list once it is configured", () => {
+    const scoped = { ...cfg, scopes: ["api", "web"] };
+    expect(() => validateMessage(parse("feat(db): add the thing")!, scoped)).toThrow(
+      /not an allowed scope/,
+    );
+    expect(validateMessage(parse("feat(api): add the thing")!, scoped)).toEqual([]);
+    expect(validateMessage(parse("feat: add the thing")!, scoped)).toEqual([]);
+    expect(validateMessage(parse("feat(db): add the thing")!, cfg)).toEqual([]);
+  });
+
   it("warns but does not fail on a long subject", () => {
     expect(validateMessage(parse(`feat: ${"x".repeat(100)}`)!, cfg)).toHaveLength(1);
   });

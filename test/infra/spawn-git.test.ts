@@ -111,6 +111,24 @@ describe("stagedStat", () => {
   });
 });
 
+describe("recentMessages", () => {
+  it("lists the latest messages, newest first, bodies included", () => {
+    const { dir, client } = newRepo();
+    stage(dir, "a.txt", "one\n");
+    git(dir, "commit", "-q", "-m", "feat: add a\n\n- with a body");
+    stage(dir, "b.txt", "two\n");
+    git(dir, "commit", "-q", "-m", "fix: add b");
+
+    expect(client.recentMessages(10)).toEqual(["fix: add b", "feat: add a\n\n- with a body"]);
+    expect(client.recentMessages(1)).toEqual(["fix: add b"]);
+  });
+
+  it("fails in a repository without commits", () => {
+    const { client } = newRepo();
+    expect(() => client.recentMessages(10)).toThrow();
+  });
+});
+
 describe("commit", () => {
   it("writes the message and empties the index", () => {
     const { dir, client } = newRepo();

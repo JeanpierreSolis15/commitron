@@ -41,6 +41,13 @@ export class SpawnGit implements GitClient {
     return this.stagedNames([]).filter((name) => !kept.has(name));
   }
 
+  recentMessages(count: number): string[] {
+    return this.run(["log", "--no-merges", `--max-count=${count}`, "--format=%B%x1e"])
+      .split("\x1e")
+      .map((message) => message.trim())
+      .filter((message) => message !== "");
+  }
+
   commit(message: string, options: CommitOptions): string {
     const dir = mkdtempSync(path.join(tmpdir(), "commitron-"));
     try {

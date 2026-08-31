@@ -13,7 +13,11 @@ export interface Generated {
   warnings: string[];
 }
 
+type Changes = Pick<PromptInput, "stat" | "diff" | "excluded">;
+
 type GenerateDependencies = Pick<Dependencies, "git" | "provider" | "files">;
+
+const historyMessageMaxChars = 500;
 
 export async function generateMessage(
   deps: GenerateDependencies,
@@ -23,9 +27,9 @@ export async function generateMessage(
   signal: AbortSignal,
 ): Promise<Generated> {
   status("reading staged changes");
-  let input: PromptInput;
+  let changes: Changes;
   try {
-    input = collectDiff(deps.git, config);
+    changes = collectDiff(deps.git, config);
   } catch (err) {
     throw fail("could not read the staged diff", errorMessage(err));
   }
@@ -35,7 +39,8 @@ export async function generateMessage(
   if (warning !== "") {
     warnings.push(warning);
   }
-  const prompt = buildPrompt(config, input, instructions);
+  const history = collectHistory(deps.git, config.history);
+  const prompt = buildPrompt(config, { ...changes, instructions, history });
 
   status(`asking ${config.model}`);
   let raw: string;
@@ -88,7 +93,7 @@ function generationError(err: unknown): Error {
   return fail("could not generate the message", errorMessage(err));
 }
 
-function collectDiff(git: GitClient, config: Config): PromptInput {
+function collectDiff(git: GitClient, config: Config): Changes {
   const stat = git.stagedStat();
   const diff = git.stagedDiff(config.exclude);
   if (diff.trim() === "") {
@@ -101,6 +106,20 @@ function collectDiff(git: GitClient, config: Config): PromptInput {
     excluded = [];
   }
   return { stat, diff, excluded };
+}
+
+function collectHistory(git: GitClient, count: number): string[] {
+  if (count <= 0) {
+    return [];
+  }
+  try {
+    return git
+      .recentMessages(count)
+      .map((message) => truncate(message.trim(), historyMessageMaxChars)[0])
+      .filter((message) => message !== "");
+  } catch {
+    return [];
+  }
 }
 
 export function loadInstructions(files: Files, root: string, config: Config): [string, string] {

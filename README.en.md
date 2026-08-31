@@ -19,8 +19,8 @@ already have. No API key, no account to create, nothing to pay for twice: if
 - **Conventional Commits out of the box.** The defaults mirror
   `@commitlint/config-conventional`, so the message passes your commitlint hook
   as it is.
-- **Knows your project.** Point it at a `CONTRIBUTING.md` and its rules outrank
-  the generic ones.
+- **Knows your project.** It learns from your recent commits, and your own rules,
+  scopes and examples in `.commitron.json` outrank the generic ones.
 - **Any language, any repository.** All it needs is Node, and it pulls in no
   dependencies. It reads `git`, not `package.json`.
 - **Your words, your call.** It shows the message, you confirm, edit or cancel.
@@ -128,9 +128,9 @@ write it yourself:
   "$schema": "https://raw.githubusercontent.com/JeanpierreSolis15/commitron/main/schema.json",
   "model": "sonnet",
   "language": "es",
-  "subjectMaxLength": 72,
-  "exclude": ["pnpm-lock.yaml"],
-  "instructions": "CONTRIBUTING.md"
+  "scopes": ["api", "web", "infra"],
+  "guidelines": ["Prefix the description with the Jira ticket from the branch name, e.g. ABC-123"],
+  "exclude": ["pnpm-lock.yaml"]
 }
 ```
 
@@ -151,9 +151,19 @@ rather than a silent no-op. A JavaScript project can keep everything in
 
 - **`language`** — the description's language (`en`, `es`, or a full name like
   `"Brazilian Portuguese"`). The Conventional Commits type stays in English.
-- **`instructions`** — a Markdown file with your project's own conventions. Its
-  content outranks the generic rules, which is what makes commitron usable in a
-  repository whose rules it knows nothing about.
+- **`guidelines`** — your own rules as text, one per entry: "prefix the
+  description with the ticket from the branch name", "never mention files in the
+  subject". They go into the prompt above the generic rules, which is what makes
+  commitron usable in a repository with conventions of its own.
+- **`scopes`** — the allowed scopes, like commitlint's `scope-enum`. Empty means
+  any; once set, a reply with another scope is rejected (one with no scope is
+  still fine).
+- **`examples`** and **`history`** — messages from your project the model should
+  imitate. `examples` you write yourself; `history` (10 by default) takes the
+  latest commits of the repository. The rules win where the history disagrees;
+  `"history": 0` turns it off.
+- **`instructions`** — optional: the path to a Markdown file you already have with
+  the conventions, such as `CONTRIBUTING.md`, so you do not repeat them in JSON.
 - **`exclude`** — git pathspecs kept out of the diff. Lockfiles are excluded by
   default: a `pnpm-lock.yaml` can be 10,000 lines and would otherwise crowd your
   real change out of the model's budget. The files still appear in the file list,
@@ -192,8 +202,8 @@ have nothing left to complain about.
 
 ## How it works
 
-1. reads `git diff --cached`, minus the excluded paths
-2. renders a prompt with your config and conventions
+1. reads `git diff --cached`, minus the excluded paths, and your latest commits
+2. renders a prompt with your config, your conventions and those examples
 3. pipes it to `claude -p --model <model> --strict-mcp-config`
 4. unwraps, parses and validates the reply
 5. shows it and commits with `git commit -F`

@@ -18,6 +18,7 @@ export interface GitClient {
   stagedStat(): string;
   stagedDiff(exclude: string[]): string;
   excludedFiles(exclude: string[]): string[];
+  recentMessages(count: number): string[];
   commit(message: string, options: CommitOptions): string;
 }
 

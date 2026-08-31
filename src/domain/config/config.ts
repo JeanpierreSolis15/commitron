@@ -20,6 +20,7 @@ export interface Config {
   extraArgs?: string[];
   language: string;
   types: string[];
+  scopes: string[];
   subjectMaxLength: number;
   subjectCase: SubjectCase;
   scopeCase: ScopeCase;
@@ -27,6 +28,9 @@ export interface Config {
   bodyMaxLineLength: number;
   maxDiffChars: number;
   exclude: string[];
+  guidelines: string[];
+  examples: string[];
+  history: number;
   instructions?: string;
   instructionsMaxChars: number;
   confirm: boolean;
@@ -56,6 +60,7 @@ export function defaults(): Config {
       "style",
       "revert",
     ],
+    scopes: [],
     subjectMaxLength: 72,
     subjectCase: "lower",
     scopeCase: "lower",
@@ -63,6 +68,9 @@ export function defaults(): Config {
     bodyMaxLineLength: 100,
     maxDiffChars: 30000,
     exclude: ["pnpm-lock.yaml", "package-lock.json", "yarn.lock", "bun.lockb", "*.lock", "*.snap"],
+    guidelines: [],
+    examples: [],
+    history: 10,
     instructionsMaxChars: 4000,
     confirm: true,
     verify: true,
@@ -73,4 +81,8 @@ export function defaults(): Config {
 
 export function allowsType(config: Config, type: string): boolean {
   return config.types.includes(type);
+}
+
+export function allowsScope(config: Config, scope: string): boolean {
+  return scope === "" || config.scopes.length === 0 || config.scopes.includes(scope);
 }

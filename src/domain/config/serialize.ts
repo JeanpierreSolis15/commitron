@@ -9,6 +9,7 @@ export const keyOrder: ConfigKey[] = [
   "extraArgs",
   "language",
   "types",
+  "scopes",
   "subjectMaxLength",
   "subjectCase",
   "scopeCase",
@@ -16,6 +17,9 @@ export const keyOrder: ConfigKey[] = [
   "bodyMaxLineLength",
   "maxDiffChars",
   "exclude",
+  "guidelines",
+  "examples",
+  "history",
   "instructions",
   "instructionsMaxChars",
   "confirm",
@@ -51,7 +55,9 @@ export const starter = `{
   "body": "auto",
 
   "exclude": ["pnpm-lock.yaml", "package-lock.json", "yarn.lock", "*.lock"],
-  "instructions": null,
+
+  "guidelines": [],
+  "examples": [],
 
   "confirm": true
 }
