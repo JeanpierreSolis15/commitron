@@ -6,49 +6,51 @@
 [![Go](https://img.shields.io/github/go-mod/go-version/JeanpierreSolis15/commitron)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-AI commit messages from your staged diff, written by the **Claude Code CLI** you
-already have. No API key, no account to create, nothing to pay for twice: if
-`claude` works on your machine, so does this.
+Español · [English](README.en.md)
+
+Mensajes de commit generados con IA a partir de tu diff *staged*, escritos por la
+**CLI de Claude Code** que ya tienes instalada. Sin API key, sin crear cuentas,
+sin pagar dos veces: si `claude` funciona en tu máquina, esto también.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/JeanpierreSolis15/commitron/main/docs/demo.svg" alt="commitron in a terminal: it reads the staged diff, asks the model, shows a Conventional Commits message and waits for confirmation before committing" width="680">
+  <img src="https://raw.githubusercontent.com/JeanpierreSolis15/commitron/main/docs/demo.svg" alt="commitron en una terminal: lee el diff staged, consulta al modelo, muestra un mensaje en formato Conventional Commits y espera confirmación antes de commitear" width="680">
 </p>
 
-- **Conventional Commits out of the box.** The defaults mirror
-  `@commitlint/config-conventional`, so the message passes your commitlint hook
-  as it is.
-- **Knows your project.** Point it at a `CONTRIBUTING.md` and its rules outrank
-  the generic ones.
-- **Any language, any repository.** A single static binary with no runtime
-  dependencies. It reads `git`, not `package.json`.
-- **Your words, your call.** It shows the message, you confirm, edit or cancel.
-  Nothing is committed behind your back.
+- **Conventional Commits de serie.** Los valores por defecto replican
+  `@commitlint/config-conventional`, así que el mensaje pasa tu hook de commitlint
+  tal cual.
+- **Conoce tu proyecto.** Apúntalo a un `CONTRIBUTING.md` y sus reglas prevalecen
+  sobre las genéricas.
+- **Cualquier lenguaje, cualquier repositorio.** Un único binario estático sin
+  dependencias en tiempo de ejecución. Lee `git`, no `package.json`.
+- **Tus palabras, tu decisión.** Te muestra el mensaje y tú confirmas, editas o
+  cancelas. Nada se commitea a tus espaldas.
 
-## Requirements
+## Requisitos
 
 - [git](https://git-scm.com)
-- the [Claude Code CLI](https://claude.com/claude-code) on your PATH and logged
-  in. commitron runs `claude -p` under the hood, so it uses the subscription you
-  already have.
+- la [CLI de Claude Code](https://claude.com/claude-code) en tu PATH y con sesión
+  iniciada. commitron ejecuta `claude -p` por debajo, así que usa la suscripción
+  que ya tienes.
 
-## Install
+## Instalación
 
 ### npm
 
-Works on macOS, Linux and Windows with Node 18 or newer. The package downloads
-the binary for your platform from the GitHub release and verifies its checksum.
+Funciona en macOS, Linux y Windows con Node 18 o superior. El paquete descarga el
+binario de tu plataforma desde la release de GitHub y verifica su checksum.
 
 ```sh
 npm install -g commitron
 ```
 
-Or without installing anything:
+O sin instalar nada:
 
 ```sh
 npx commitron
 ```
 
-Or per project, next to the rest of your tooling:
+O por proyecto, junto al resto de tu tooling:
 
 ```sh
 npm install --save-dev commitron
@@ -80,60 +82,60 @@ irm https://raw.githubusercontent.com/JeanpierreSolis15/commitron/main/install.p
 go install github.com/JeanpierreSolis15/commitron@latest
 ```
 
-### Binaries
+### Binarios
 
-Every release ships binaries for Linux, macOS and Windows on amd64 and arm64,
-with a `checksums.txt`, on the
-[releases page](https://github.com/JeanpierreSolis15/commitron/releases).
+Cada release incluye binarios para Linux, macOS y Windows en amd64 y arm64, con
+su `checksums.txt`, en la
+[página de releases](https://github.com/JeanpierreSolis15/commitron/releases).
 
-## Use
+## Uso
 
 ```sh
 git add .
 commitron
 ```
 
-commitron reads what is staged, asks the model for a message, shows it and waits
-for you:
+commitron lee lo que está *staged*, le pide el mensaje al modelo, lo muestra y
+espera tu respuesta:
 
-- `Y` or Enter commits
-- `e` opens the message in your git editor first
-- `n` cancels
+- `Y` o Enter commitea
+- `e` abre antes el mensaje en tu editor de git
+- `n` cancela
 
 | flag | |
 |---|---|
-| `-m, --model <name>` | model for this run (`sonnet`, `opus`, `haiku` or a full model id) |
-| `-e, --edit` | open the message in your git editor before committing |
-| `-y, --yes` | skip the confirmation |
-| `--dry-run` | print the message and stop |
-| `--config <path>` | load an extra config file on top |
-| `--no-verify` | skip git hooks |
+| `-m, --model <name>` | modelo para esta ejecución (`sonnet`, `opus`, `haiku` o un id de modelo completo) |
+| `-e, --edit` | abre el mensaje en tu editor de git antes de commitear |
+| `-y, --yes` | omite la confirmación |
+| `--dry-run` | imprime el mensaje y se detiene |
+| `--config <path>` | carga un archivo de configuración adicional por encima del resto |
+| `--no-verify` | omite los hooks de git |
 | `--color <mode>` | `auto` \| `always` \| `never` |
 
-Piping works the way you would expect: the pretty output goes to stderr, so
-`commitron --dry-run > msg.txt` gives you the plain message.
+Los pipes funcionan como esperas: la salida bonita va a stderr, así que
+`commitron --dry-run > msg.txt` te deja el mensaje plano en el archivo.
 
-A git alias keeps it close at hand:
+Un alias de git lo deja a mano:
 
 ```sh
 git config --global alias.ai '!commitron'
 git ai
 ```
 
-Other commands:
+Otros comandos:
 
 ```sh
-commitron init           # create .commitron.json with the common keys
-commitron init --full    # every key
-commitron init --global  # your defaults for every repository
-commitron config         # what is in effect, and where each value came from
+commitron init           # crea .commitron.json con las claves habituales
+commitron init --full    # todas las claves
+commitron init --global  # tus valores por defecto para todos los repositorios
+commitron config         # qué está en vigor y de dónde sale cada valor
 commitron version
 ```
 
-## Configure
+## Configuración
 
-The first run in a repository offers to create `.commitron.json`. You can also
-write it yourself:
+La primera ejecución en un repositorio ofrece crear `.commitron.json`. También
+puedes escribirlo tú:
 
 ```jsonc
 {
@@ -146,90 +148,94 @@ write it yourself:
 }
 ```
 
-That `$schema` line is worth keeping: editors use it for autocomplete, inline
-docs and validation of every key, so you never have to look them up.
+Esa línea `$schema` merece quedarse: los editores la usan para autocompletar,
+mostrar documentación inline y validar cada clave, así que nunca tendrás que
+buscarlas.
 
-Settings are merged lowest precedence first:
+Los ajustes se combinan de menor a mayor precedencia:
 
 ```
-defaults → user config → package.json#commitron → .commitron.json → --config → flags
+defaults → config de usuario → package.json#commitron → .commitron.json → --config → flags
 ```
 
-Each layer only overrides the keys it declares, and an unknown key is an error
-rather than a silent no-op. A JavaScript project can keep everything in
-`package.json` under a `"commitron"` key instead of a separate file.
+Cada capa solo sobrescribe las claves que declara, y una clave desconocida es un
+error, no un fallo silencioso. Un proyecto JavaScript puede tenerlo todo en
+`package.json` bajo la clave `"commitron"` en lugar de un archivo aparte.
 
-### Keys worth knowing
+### Claves que conviene conocer
 
-- **`language`** — the description's language (`en`, `es`, or a full name like
-  `"Brazilian Portuguese"`). The Conventional Commits type stays in English.
-- **`instructions`** — a Markdown file with your project's own conventions. Its
-  content outranks the generic rules, which is what makes commitron usable in a
-  repository whose rules it knows nothing about.
-- **`exclude`** — git pathspecs kept out of the diff. Lockfiles are excluded by
-  default: a `pnpm-lock.yaml` can be 10,000 lines and would otherwise crowd your
-  real change out of the model's budget. The files still appear in the file list,
-  so the message can mention them.
-- **`types`** — the types the model may use. A reply with anything else is
-  rejected instead of committed.
-- **`model`** and **`timeoutSeconds`** — which model answers and how long to wait.
+- **`language`** — idioma de la descripción (`en`, `es`, o un nombre completo
+  como `"Brazilian Portuguese"`). El tipo de Conventional Commits se mantiene en
+  inglés.
+- **`instructions`** — un archivo Markdown con las convenciones de tu proyecto.
+  Su contenido prevalece sobre las reglas genéricas, y es lo que hace útil a
+  commitron en un repositorio cuyas reglas no conoce.
+- **`exclude`** — pathspecs de git que se dejan fuera del diff. Los lockfiles se
+  excluyen por defecto: un `pnpm-lock.yaml` puede tener 10.000 líneas y dejaría
+  tu cambio real fuera del presupuesto del modelo. Esos archivos siguen apareciendo
+  en la lista de cambios, así que el mensaje puede mencionarlos.
+- **`types`** — los tipos que el modelo puede usar. Una respuesta con cualquier
+  otro se rechaza en lugar de commitearse.
+- **`model`** y **`timeoutSeconds`** — qué modelo responde y cuánto esperar.
 
-Run `commitron init --full` to see every key with its default.
+Ejecuta `commitron init --full` para ver todas las claves con su valor por
+defecto.
 
 ## commitlint
 
-The defaults mirror `@commitlint/config-conventional`, so what commitron writes
-passes a commitlint hook as it is. Some rules are met by rewriting the message,
-the rest by telling you:
+Los valores por defecto replican `@commitlint/config-conventional`, así que lo que
+commitron escribe pasa un hook de commitlint tal cual. Algunas reglas se cumplen
+reescribiendo el mensaje; el resto, avisándote:
 
-| commitlint rule | commitron |
+| regla de commitlint | commitron |
 |---|---|
-| `type-enum` | **rejected** — the reply must use one of your configured `types` |
-| `subject-empty`, `type-empty`, `header-trim` | **rejected** — such a reply would not parse |
-| `type-case` (lower-case) | fixed on the way out |
-| `subject-full-stop` | fixed on the way out |
-| `body-leading-blank` | fixed on the way out |
-| `body-max-line-length` | body wrapped to `bodyMaxLineLength` (100) |
-| `header-max-length` | warned past `subjectMaxLength` (72 here; commitlint's own default is 100) |
-| `subject-case` | warned, unless the first word is a name or acronym such as OAuth or API |
-| `scope-case` | warned; use `"scopeCase": "any"` for `feat(Chip)`-style scopes |
+| `type-enum` | **rechazado** — la respuesta debe usar uno de los `types` configurados |
+| `subject-empty`, `type-empty`, `header-trim` | **rechazado** — una respuesta así no se podría parsear |
+| `type-case` (lower-case) | corregido al salir |
+| `subject-full-stop` | corregido al salir |
+| `body-leading-blank` | corregido al salir |
+| `body-max-line-length` | cuerpo ajustado a `bodyMaxLineLength` (100) |
+| `header-max-length` | aviso si supera `subjectMaxLength` (72 aquí; el valor por defecto de commitlint es 100) |
+| `subject-case` | aviso, salvo que la primera palabra sea un nombre o acrónimo como OAuth o API |
+| `scope-case` | aviso; usa `"scopeCase": "any"` para scopes del estilo `feat(Chip)` |
 
-The split is deliberate: a fix that is purely mechanical is applied without
-asking, and anything that needs judgement is left to you. Lowercasing `Feat:` is
-safe; lowercasing `OAuth` is not.
+La división es deliberada: una corrección puramente mecánica se aplica sin
+preguntar, y lo que requiere criterio se deja en tus manos. Pasar `Feat:` a
+minúsculas es seguro; pasar `OAuth` a minúsculas, no.
 
-commitron does not replace commitlint. With `verify: true` (the default) your own
-`commit-msg` hook still runs and has the last word — the point is that it should
-have nothing left to complain about.
+commitron no sustituye a commitlint. Con `verify: true` (el valor por defecto) tu
+propio hook `commit-msg` sigue ejecutándose y tiene la última palabra — la idea
+es que no le quede nada de lo que quejarse.
 
-## How it works
+## Cómo funciona
 
-1. reads `git diff --cached`, minus the excluded paths
-2. renders a prompt from a template with your config and conventions
-3. pipes it to `claude -p --model <model> --strict-mcp-config`
-4. unwraps, parses and validates the reply
-5. shows it and commits with `git commit -F`
+1. lee `git diff --cached`, sin las rutas excluidas
+2. renderiza un prompt desde una plantilla con tu configuración y tus convenciones
+3. se lo pasa por pipe a `claude -p --model <model> --strict-mcp-config`
+4. desenvuelve, parsea y valida la respuesta
+5. lo muestra y commitea con `git commit -F`
 
-No shell is ever spawned, so a timeout kills the real process, and there is
-nothing to quote or escape. The diff never leaves your machine by any path other
-than the Claude Code CLI you already trust with it.
+Nunca se lanza un shell, así que un timeout mata el proceso real y no hay nada
+que entrecomillar ni escapar. El diff no sale de tu máquina por ningún camino que
+no sea la CLI de Claude Code en la que ya confías.
 
-## Contributing
+## Contribuir
 
-Issues and pull requests are welcome. The short version:
+Los issues y pull requests son bienvenidos. La versión corta:
 
-- `main` is production and only moves by release; `develop` is where work lands.
-  Branch from `develop`, open your pull request against `develop`.
-- Commit messages follow Conventional Commits. commitron writes its own, so
-  `commitron` in this repository is the expected workflow.
-- CI runs the suite on Linux, macOS and Windows; `go test ./...` and `gofmt -l .`
-  must be clean before a merge.
+- `main` es producción y solo avanza con cada release; `develop` es donde aterriza
+  el trabajo. Crea tu rama desde `develop` y abre el pull request contra `develop`.
+- Los mensajes de commit siguen Conventional Commits. commitron escribe los suyos,
+  así que usar `commitron` en este repositorio es el flujo esperado.
+- CI ejecuta la suite en Linux, macOS y Windows; `go test ./...` y `gofmt -l .`
+  deben estar limpios antes de un merge.
 
-[CONTRIBUTING.md](CONTRIBUTING.md) has the full guide: repository layout, how to
-run everything locally, the branch model and how a release is cut.
+[CONTRIBUTING.md](CONTRIBUTING.md) (en inglés) tiene la guía completa: estructura
+del repositorio, cómo ejecutar todo en local, el modelo de ramas y cómo se publica
+una release.
 
-## License
+## Licencia
 
-[MIT](LICENSE). You can use commitron for anything, including commercial work,
-and copy, modify and redistribute it, as long as the license notice stays with
-it. It comes with no warranty.
+[MIT](LICENSE). Puedes usar commitron para lo que quieras, incluido trabajo
+comercial, y copiarlo, modificarlo y redistribuirlo, siempre que el aviso de
+licencia lo acompañe. Se entrega sin ninguna garantía.
