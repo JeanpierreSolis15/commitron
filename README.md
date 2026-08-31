@@ -1,6 +1,8 @@
 # commitron
 
 [![CI](https://github.com/JeanpierreSolis15/commitron/actions/workflows/ci.yml/badge.svg)](https://github.com/JeanpierreSolis15/commitron/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/JeanpierreSolis15/commitron?sort=semver)](https://github.com/JeanpierreSolis15/commitron/releases)
+[![npm](https://img.shields.io/npm/v/%40deadgun15%2Fcommitron)](https://www.npmjs.com/package/@deadgun15/commitron)
 [![Go](https://img.shields.io/github/go-mod/go-version/JeanpierreSolis15/commitron)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -41,20 +43,22 @@ verifica su checksum. No usa scripts de instalación, así que funciona igual co
 npm 12 y con `--ignore-scripts`.
 
 ```sh
-npm install -g commitron
+npm install -g @deadgun15/commitron
 ```
 
 O sin instalar nada:
 
 ```sh
-npx commitron
+npx @deadgun15/commitron
 ```
 
 O por proyecto, junto al resto de tu tooling:
 
 ```sh
-npm install --save-dev commitron
+npm install --save-dev @deadgun15/commitron
 ```
+
+El comando instalado se llama `commitron` en los tres casos.
 
 ```json
 {

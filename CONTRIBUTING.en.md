@@ -112,7 +112,7 @@ The Release workflow then:
 1. builds the binaries for Linux, macOS and Windows on amd64 and arm64;
 2. uploads the archives, the bare binaries and `checksums.txt` to a GitHub
    release with a changelog grouped by type;
-3. publishes `commitron@1.2.3` to npm with provenance. A pre-release tag such as
+3. publishes `@deadgun15/commitron@1.2.3` to npm with provenance. A pre-release tag such as
    `v1.3.0-rc.1` is published under the npm dist-tag `next` instead of `latest`.
 
 ### One-time setup for maintainers
@@ -121,18 +121,11 @@ The Release workflow then:
   Tokens → Granular, with publish rights and "bypass 2FA") and add it as a
   repository secret named `NPM_TOKEN`. Without it the npm step is skipped with a
   warning; the GitHub release itself is unaffected.
-- **Package name.** It is the `name` in `npm/package.json`. If the registry
-  refuses the unscoped name, switch to a scoped one such as
-  `@jeanpierresolis15/commitron`; nothing else needs to change.
+- **Package name.** It is `@deadgun15/commitron`: the scope is the maintainer's
+  npm username, because the unscoped name `commitron` belongs to another
+  account. The installed command is still `commitron` (`bin` in
+  `npm/package.json`).
 - **Homebrew and Scoop** are optional and documented in `.goreleaser.yaml`.
-- **Badges.** The release and npm badges only render once something is published,
-  so they are not in the READMEs yet. After the first release, add these two under
-  the CI badge in `README.md` and `README.en.md`:
-
-  ```markdown
-  [![Release](https://img.shields.io/github/v/release/JeanpierreSolis15/commitron?sort=semver)](https://github.com/JeanpierreSolis15/commitron/releases)
-  [![npm](https://img.shields.io/npm/v/commitron)](https://www.npmjs.com/package/commitron)
-  ```
 
 ## Reporting problems
 

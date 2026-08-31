@@ -1,5 +1,5 @@
 {
-  "name": "commitron",
+  "name": "@deadgun15/commitron",
   "version": "0.0.0-dev",
   "description": "AI commit messages from your staged diff, written by the Claude Code CLI you already have",
   "license": "MIT",
