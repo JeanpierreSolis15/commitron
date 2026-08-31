@@ -1,5 +1,3 @@
-/commitron
-*.exe
-*.test
-/dist/
-*.out
+node_modules/
+dist/
+*.tgz

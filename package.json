@@ -1,0 +1,58 @@
+{
+  "name": "@deadgun15/commitron",
+  "version": "0.0.0-dev",
+  "description": "AI commit messages from your staged diff, written by the Claude Code CLI you already have",
+  "license": "MIT",
+  "author": "Jeanpierre Solis",
+  "homepage": "https://github.com/JeanpierreSolis15/commitron#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JeanpierreSolis15/commitron.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JeanpierreSolis15/commitron/issues"
+  },
+  "keywords": [
+    "commit",
+    "commit-message",
+    "conventional-commits",
+    "commitlint",
+    "git",
+    "claude",
+    "claude-code",
+    "ai",
+    "cli"
+  ],
+  "type": "module",
+  "bin": {
+    "commitron": "dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "schema.json"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^20.19.43",
+    "eslint": "^10.9.1",
+    "prettier": "^3.9.6",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.68.0",
+    "vitest": "^4.1.11"
+  }
+}
