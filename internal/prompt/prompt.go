@@ -23,16 +23,19 @@ type Input struct {
 }
 
 type view struct {
-	Types            string
-	Language         string
-	SubjectMaxLength int
-	Body             string
-	Instructions     string
-	Stat             string
-	Diff             string
-	Excluded         string
-	Truncated        bool
-	MaxDiffChars     int
+	Types             string
+	Language          string
+	SubjectMaxLength  int
+	SubjectLower      bool
+	ScopeLower        bool
+	Body              string
+	BodyMaxLineLength int
+	Instructions      string
+	Stat              string
+	Diff              string
+	Excluded          string
+	Truncated         bool
+	MaxDiffChars      int
 }
 
 // languages maps the common codes to a name the model understands. Anything

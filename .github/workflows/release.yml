@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # goreleaser builds the changelog from history
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          args: release --clean
+        env:
+          # Enough for the release itself. Publishing to a Homebrew tap or a
+          # Scoop bucket needs a PAT with access to that repo, stored as
+          # secrets.TAP_TOKEN and wired up in .goreleaser.yaml.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,5 +2,5 @@
 
 package ui
 
-// enableANSI is a no-op everywhere but Windows.
+// enableANSI is a no-op outside Windows.
 func enableANSI() {}

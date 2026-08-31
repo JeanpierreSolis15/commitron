@@ -1,19 +1,50 @@
 You are writing a git commit message for the staged changes shown below.
 
-Rules:
-- Conventional Commits: "type(scope): description". The scope is optional.
-- Allowed types: {{ .Types }}. Pick exactly one.
-- Write the description in {{ .Language }}, imperative mood, no trailing period.
-- The subject line must be at most {{ .SubjectMaxLength }} characters, type and scope included.
-{{- if eq .Body "never" }}
-- Subject line only. Do not add a body.
-{{- else if eq .Body "always" }}
-- Always add a body: one blank line after the subject, then short "- " bullets.
-{{- else }}
-- Add a body only when the change has several distinct parts: one blank line after the subject, then short "- " bullets.
+The message must pass commitlint with @commitlint/config-conventional, so:
+
+Subject line
+- Shape: "type(scope): description". The scope is optional; never write empty
+  parentheses, "type(): ..." or a placeholder scope.
+- Allowed types: {{ .Types }}. Pick exactly one, in lowercase.
+{{- if .ScopeLower }}
+- The scope, when there is one, is lowercase and names an area of the codebase.
 {{- end }}
-- Describe what the change does, not which files moved.
-- One message only: no alternatives, no explanations, no notes, no character counts, no co-authors, no footers.
+- Write the description in {{ .Language }}, imperative mood: "add", never "added",
+  "adds" or "adding".
+{{- if .SubjectLower }}
+- Start the description with a lowercase letter. The only exception is a name or
+  an acronym that is always capitalised, such as OAuth, API or PostgreSQL.
+{{- end }}
+- No full stop at the end.
+- The whole line, type and scope included, is at most {{ .SubjectMaxLength }} characters.
+- Say what the change does and why, not which files were touched. "fix(auth):
+  reject expired tokens", not "fix: update auth.go".
+
+Body
+{{- if eq .Body "never" }}
+- Do not write one. Subject line only.
+{{- else }}
+{{- if eq .Body "always" }}
+- Always write one.
+{{- else }}
+- Write one only when the change has several distinct parts, or when the reason
+  is not obvious from the subject. A small, single-purpose change needs none.
+{{- end }}
+- Leave exactly one blank line between the subject and the body.
+- Use short "- " bullets, one per distinct change.
+{{- if .BodyMaxLineLength }}
+- Wrap every body line at {{ .BodyMaxLineLength }} characters.
+{{- end }}
+{{- end }}
+
+Breaking changes
+- Put "!" before the colon: "feat(api)!: rename the size tokens".
+- Add a footer after a blank line: "BREAKING CHANGE: what breaks and how to adapt".
+- Only when the change really breaks a consumer. Do not invent one.
+
+Output
+- One message only. No alternatives, no explanations, no notes, no character
+  counts, no co-authors, no "Generated with" lines, no other footers.
 - Reply with ONLY the final message, wrapped exactly in <commit> and </commit>.
 {{- if .Instructions }}
 

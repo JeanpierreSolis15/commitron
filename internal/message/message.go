@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/JeanpierreSolis15/commitron/internal/config"
 )
@@ -74,16 +75,44 @@ func Parse(msg string) (Parsed, bool) {
 }
 
 // Validate enforces the rules that are worth failing on and returns warnings
-// for the ones that are not. A wrong type means the model ignored the contract;
-// an overlong subject is only cosmetic, so it never blocks a commit.
+// for the ones that are not. A wrong type means the model ignored the contract,
+// so that blocks. The rest mirror @commitlint/config-conventional and only warn:
+// the fixable ones are already fixed by Render, and for the rest your own
+// commit-msg hook stays the final judge.
 func Validate(p Parsed, cfg config.Config) (warnings []string, err error) {
 	if !cfg.AllowsType(p.Type) {
 		return nil, fmt.Errorf("%q is not an allowed type (%s)", p.Type, strings.Join(cfg.Types, ", "))
 	}
-	if n := len([]rune(p.Subject)); n > cfg.SubjectMaxLength {
+
+	// header-max-length, measured on what will actually be committed.
+	subject := p.Canonical()
+	if n := utf8.RuneCountInString(subject); n > cfg.SubjectMaxLength {
 		warnings = append(warnings,
 			fmt.Sprintf("subject is %d characters, %d over the limit", n, n-cfg.SubjectMaxLength))
 	}
+
+	// subject-case: commitlint rejects a sentence-cased description.
+	if cfg.SubjectCase == "lower" && violatesLowerCase(p.Description) {
+		warnings = append(warnings, "description starts with a capital; commitlint expects lowercase")
+	}
+
+	// scope-case
+	if cfg.ScopeCase == "lower" && hasUpper(p.Scope) {
+		warnings = append(warnings, fmt.Sprintf("scope %q is not lowercase", p.Scope))
+	}
+
+	// body-max-line-length, checked after wrapping: what is left is a single
+	// word too long to break, such as a URL.
+	if cfg.BodyMaxLineLength > 0 {
+		for _, line := range strings.Split(wrapBody(p.Body, cfg.BodyMaxLineLength), "\n") {
+			if n := utf8.RuneCountInString(line); n > cfg.BodyMaxLineLength {
+				warnings = append(warnings,
+					fmt.Sprintf("a body line is %d characters and cannot be wrapped", n))
+				break
+			}
+		}
+	}
+
 	if cfg.Body == "always" && p.Body == "" {
 		warnings = append(warnings, "body is required by config but the model returned none")
 	}

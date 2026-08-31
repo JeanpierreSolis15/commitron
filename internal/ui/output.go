@@ -17,6 +17,9 @@ const (
 	AnswerYes Answer = iota
 	AnswerNo
 	AnswerEdit
+	// AnswerUnavailable means there is no terminal to ask on. Committing anyway
+	// would be a surprise, so the caller must stop and let the user pass --yes.
+	AnswerUnavailable
 )
 
 // Header is the first line: the tool, the model and what is staged.
@@ -70,11 +73,10 @@ func (t *Theme) Warn(text string) {
 	fmt.Fprintf(os.Stderr, "  %s %s\n", t.Bad(t.Glyph.Warn), t.Dim(text))
 }
 
-// Confirm asks whether to commit. Without a terminal on stdin there is nobody to
-// ask, so the answer is yes: the user ran the command on purpose.
+// Confirm asks whether to commit.
 func (t *Theme) Confirm() Answer {
 	if !IsTerminal(os.Stdin) {
-		return AnswerYes
+		return AnswerUnavailable
 	}
 	fmt.Fprintf(os.Stderr, "\n  %s %s ", t.Head("commit?"), t.Dim("[Y/n/e=edit]"))
 

@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/JeanpierreSolis15/commitron/main/schema.json",
+  "title": "commitron configuration",
+  "description": "Settings for commitron, which writes commit messages from your staged diff using the Claude Code CLI.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URL of this schema. Keeps editor autocomplete working."
+    },
+
+    "model": {
+      "type": "string",
+      "default": "sonnet",
+      "description": "Model passed to `claude --model`. An alias such as sonnet, opus or haiku, or a full model id."
+    },
+    "fallbackModel": {
+      "type": "string",
+      "description": "Model to fall back to when the main one is overloaded or unavailable."
+    },
+    "timeoutSeconds": {
+      "type": "integer",
+      "minimum": 5,
+      "default": 120,
+      "description": "How long to wait for the model before giving up."
+    },
+    "strictMcpConfig": {
+      "type": "boolean",
+      "default": true,
+      "description": "Skip the project's MCP servers. Writing a commit message needs no tools, so this keeps the call fast and cheap."
+    },
+    "extraArgs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Extra flags appended to the claude command. Escape hatch; you rarely need it."
+    },
+
+    "language": {
+      "type": "string",
+      "default": "en",
+      "description": "Language of the commit description. A code such as en, es or pt, or a full name like \"Brazilian Portuguese\". The type stays in English either way."
+    },
+    "types": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Commit types the model may use. A reply with any other type is rejected.",
+      "default": ["feat", "fix", "refactor", "perf", "docs", "test", "build", "ci", "chore", "style", "revert"]
+    },
+    "subjectMaxLength": {
+      "type": "integer",
+      "minimum": 20,
+      "default": 72,
+      "description": "Maximum length of the subject line, type and scope included. Going over is a warning, not a failure."
+    },
+    "subjectCase": {
+      "enum": ["lower", "sentence", "any"],
+      "default": "lower",
+      "description": "Case of the description. lower matches commitlint's subject-case rule, which rejects a sentence-cased subject; names and acronyms such as OAuth or API are still allowed."
+    },
+    "scopeCase": {
+      "enum": ["lower", "any"],
+      "default": "lower",
+      "description": "Case of the scope. lower matches commitlint's scope-case rule. Use any for projects that scope by component name, such as feat(Chip)."
+    },
+    "body": {
+      "enum": ["auto", "always", "never"],
+      "default": "auto",
+      "description": "When to add a body. auto adds one only when the change has several distinct parts."
+    },
+    "bodyMaxLineLength": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 100,
+      "description": "Body lines are wrapped to this width, matching commitlint's body-max-line-length. 0 turns wrapping off."
+    },
+
+    "maxDiffChars": {
+      "type": "integer",
+      "minimum": 500,
+      "default": 30000,
+      "description": "Character budget for the diff sent to the model. Anything past it is cut."
+    },
+    "exclude": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Git pathspecs kept out of the diff. Lockfiles are excluded by default so they cannot eat the whole budget; the files still show up in the file list.",
+      "default": ["pnpm-lock.yaml", "package-lock.json", "yarn.lock", "bun.lockb", "*.lock", "*.snap"]
+    },
+    "instructions": {
+      "type": ["string", "null"],
+      "description": "Path to a Markdown file with this project's commit conventions, relative to the repository root. Its content takes precedence over the generic rules."
+    },
+    "instructionsMaxChars": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 4000,
+      "description": "Character budget for the instructions file."
+    },
+
+    "confirm": {
+      "type": "boolean",
+      "default": true,
+      "description": "Ask before committing. Skip it for one run with --yes."
+    },
+    "verify": {
+      "type": "boolean",
+      "default": true,
+      "description": "Run git hooks. false is the same as git commit --no-verify."
+    },
+    "color": {
+      "enum": ["auto", "always", "never"],
+      "default": "auto",
+      "description": "Colored output. auto turns it off when the output is not a terminal or NO_COLOR is set."
+    },
+    "unicode": {
+      "enum": ["auto", "always", "never"],
+      "default": "auto",
+      "description": "Unicode glyphs and the braille spinner, with an ASCII fallback."
+    }
+  }
+}

@@ -20,11 +20,15 @@ type Config struct {
 	StrictMCPConfig bool     `json:"strictMcpConfig"`
 	ExtraArgs       []string `json:"extraArgs,omitempty"`
 
-	// Message shape
-	Language         string   `json:"language"`
-	Types            []string `json:"types"`
-	SubjectMaxLength int      `json:"subjectMaxLength"`
-	Body             string   `json:"body"` // auto | always | never
+	// Message shape. The defaults mirror @commitlint/config-conventional so the
+	// output passes a commitlint hook without extra configuration.
+	Language          string   `json:"language"`
+	Types             []string `json:"types"`
+	SubjectMaxLength  int      `json:"subjectMaxLength"`
+	SubjectCase       string   `json:"subjectCase"` // lower | sentence | any
+	ScopeCase         string   `json:"scopeCase"`   // lower | any
+	Body              string   `json:"body"`        // auto | always | never
+	BodyMaxLineLength int      `json:"bodyMaxLineLength"`
 
 	// What the model gets to see
 	MaxDiffChars         int      `json:"maxDiffChars"`
@@ -51,8 +55,11 @@ func Defaults() Config {
 			"feat", "fix", "refactor", "perf", "docs",
 			"test", "build", "ci", "chore", "style", "revert",
 		},
-		SubjectMaxLength: 72,
-		Body:             "auto",
+		SubjectMaxLength:  72,
+		SubjectCase:       "lower",
+		ScopeCase:         "lower",
+		Body:              "auto",
+		BodyMaxLineLength: 100,
 
 		MaxDiffChars: 30000,
 		Exclude: []string{
@@ -83,6 +90,12 @@ func (c Config) Validate() error {
 		return fmt.Errorf("types: needs at least one commit type")
 	case c.SubjectMaxLength < 20:
 		return fmt.Errorf("subjectMaxLength: %d is too low, use at least 20", c.SubjectMaxLength)
+	case !slices.Contains([]string{"lower", "sentence", "any"}, c.SubjectCase):
+		return fmt.Errorf("subjectCase: %q is not one of lower, sentence, any", c.SubjectCase)
+	case !slices.Contains([]string{"lower", "any"}, c.ScopeCase):
+		return fmt.Errorf("scopeCase: %q is not one of lower, any", c.ScopeCase)
+	case c.BodyMaxLineLength < 0:
+		return fmt.Errorf("bodyMaxLineLength: cannot be negative")
 	case c.MaxDiffChars < 500:
 		return fmt.Errorf("maxDiffChars: %d is too low, use at least 500", c.MaxDiffChars)
 	case c.InstructionsMaxChars < 0:

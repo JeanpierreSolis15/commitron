@@ -90,14 +90,7 @@ func autoUnicode() bool {
 }
 
 // IsTerminal reports whether f is attached to a terminal.
-func IsTerminal(f *os.File) bool {
-	if fi, err := f.Stat(); err == nil && fi.Mode()&os.ModeCharDevice != 0 {
-		return true
-	}
-	// mintty (Git Bash, MSYS2) hands out a named pipe, which Stat cannot tell
-	// apart from a redirect.
-	return runtime.GOOS == "windows" && os.Getenv("MSYSTEM") != ""
-}
+func IsTerminal(f *os.File) bool { return isTerminal(f) }
 
 func fg(hex string) string {
 	n, err := strconv.ParseUint(strings.TrimPrefix(hex, "#"), 16, 32)

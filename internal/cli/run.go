@@ -159,6 +159,11 @@ func runCommit(argv []string) error {
 	}
 	spinner.Stop()
 
+	// What gets committed is the canonical form: lowercase type, no trailing
+	// full stop, a blank line before the body and its lines wrapped.
+	text = parsed.Render(cfg)
+	parsed, _ = message.Parse(text)
+
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, theme.Message(parsed))
 	if warning != "" {
@@ -184,6 +189,9 @@ func runCommit(argv []string) error {
 			return errCancelled
 		case ui.AnswerEdit:
 			edit = true
+		case ui.AnswerUnavailable:
+			return fail("there is no terminal to confirm on",
+				"pass --yes to commit without confirming, or --dry-run to only see the message")
 		}
 	}
 

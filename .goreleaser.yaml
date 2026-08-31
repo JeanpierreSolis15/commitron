@@ -1,0 +1,95 @@
+# https://goreleaser.com — validated on every push by the CI "goreleaser check" job.
+version: 2
+
+project_name: commitron
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: commitron
+    binary: commitron
+    main: .
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/JeanpierreSolis15/commitron/internal/cli.Version={{ .Version }}
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - README.md
+      - LICENSE
+      - schema.json
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  version_template: '{{ incpatch .Version }}-next'
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^feat(\(.+\))?!?:'
+      order: 0
+    - title: Fixes
+      regexp: '^fix(\(.+\))?!?:'
+      order: 1
+    - title: Other
+      order: 99
+  filters:
+    exclude:
+      - '^docs(\(.+\))?:'
+      - '^test(\(.+\))?:'
+      - '^chore(\(.+\))?:'
+      - '^ci(\(.+\))?:'
+
+release:
+  footer: |
+    ## Install
+
+    ```sh
+    go install github.com/JeanpierreSolis15/commitron@{{ .Tag }}
+    ```
+
+    Or download the binary for your platform above.
+
+# Publishing to a Homebrew tap and a Scoop bucket needs two extra repositories
+# and a PAT that can push to them (the default GITHUB_TOKEN cannot). Create
+# `homebrew-tap` and `scoop-bucket` under the same account, add the token as the
+# TAP_TOKEN secret, and uncomment:
+#
+# brews:
+#   - repository:
+#       owner: JeanpierreSolis15
+#       name: homebrew-tap
+#       token: '{{ .Env.TAP_TOKEN }}'
+#     homepage: https://github.com/JeanpierreSolis15/commitron
+#     description: AI commit messages from your staged diff, via the Claude Code CLI
+#     license: MIT
+#     test: |
+#       system "#{bin}/commitron", "version"
+#
+# scoops:
+#   - repository:
+#       owner: JeanpierreSolis15
+#       name: scoop-bucket
+#       token: '{{ .Env.TAP_TOKEN }}'
+#     homepage: https://github.com/JeanpierreSolis15/commitron
+#     description: AI commit messages from your staged diff, via the Claude Code CLI
+#     license: MIT
