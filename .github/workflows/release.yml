@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -28,3 +29,23 @@ jobs:
           # Scoop bucket needs a PAT with access to that repo, stored as
           # secrets.TAP_TOKEN and wired up in .goreleaser.yaml.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+
+      # Runs after goreleaser on purpose: the npm package downloads its binary
+      # from the GitHub release, so the assets must already be there.
+      # Needs the NPM_TOKEN repository secret (an npm automation token).
+      - name: Publish to npm
+        working-directory: npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          tag=latest
+          case "$version" in *-*) tag=next ;; esac
+          cp ../README.md ../LICENSE .
+          npm version --no-git-tag-version "$version"
+          npm publish --access public --provenance --tag "$tag"

@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
 
 permissions:
@@ -74,3 +74,33 @@ jobs:
         with:
           version: '~> v2'
           args: check
+
+  npm-package:
+    name: npm package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Check syntax
+        run: |
+          node --check npm/bin/commitron.js
+          node --check npm/install.js
+          node --check npm/lib/platform.js
+
+      - name: Check package contents
+        working-directory: npm
+        run: npm pack --dry-run
+
+      # The launcher must find and run a binary in npm/vendor, which is where
+      # install.js puts the downloaded release.
+      - name: Run the launcher against a local build
+        run: |
+          mkdir -p npm/vendor
+          go build -o npm/vendor/commitron .
+          test "$(node npm/bin/commitron.js version)" = dev

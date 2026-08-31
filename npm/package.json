@@ -1,0 +1,52 @@
+{
+  "name": "commitron",
+  "version": "0.0.0-dev",
+  "description": "AI commit messages from your staged diff, written by the Claude Code CLI you already have",
+  "license": "MIT",
+  "author": "Jeanpierre Solis",
+  "homepage": "https://github.com/JeanpierreSolis15/commitron#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JeanpierreSolis15/commitron.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JeanpierreSolis15/commitron/issues"
+  },
+  "keywords": [
+    "commit",
+    "commit-message",
+    "conventional-commits",
+    "commitlint",
+    "git",
+    "claude",
+    "claude-code",
+    "ai",
+    "cli"
+  ],
+  "bin": {
+    "commitron": "bin/commitron.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "install.js"
+  ],
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

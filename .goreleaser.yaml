@@ -33,6 +33,10 @@ archives:
       - README.md
       - LICENSE
       - schema.json
+  - id: binaries
+    formats: [binary]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
 
 checksum:
   name_template: checksums.txt
