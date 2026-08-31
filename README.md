@@ -219,8 +219,9 @@ Code en la que ya confías.
 
 Los issues y pull requests son bienvenidos. La versión corta:
 
-- `main` es producción y solo avanza con cada release; `develop` es donde aterriza
-  el trabajo. Crea tu rama desde `develop` y abre el pull request contra `develop`.
+- `main` es producción: cada merge desde `develop` publica una versión nueva,
+  calculada a partir de los commits. `develop` es donde aterriza el trabajo: crea
+  tu rama desde ahí y abre el pull request contra `develop`.
 - Los mensajes de commit siguen Conventional Commits. commitron escribe los suyos,
   así que usar `commitron` en este repositorio es el flujo esperado.
 - CI ejecuta la suite en Linux, macOS y Windows; `npm test`, `npm run lint` y

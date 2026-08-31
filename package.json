@@ -47,9 +47,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@semantic-release/exec": "^7.1.0",
     "@types/node": "^20.19.43",
+    "conventional-changelog-conventionalcommits": "^8.0.0",
     "eslint": "^10.9.1",
     "prettier": "^3.9.6",
+    "semantic-release": "^25.0.9",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.68.0",

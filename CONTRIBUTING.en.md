@@ -71,7 +71,7 @@ by hand.
 
 | branch | role |
 |---|---|
-| `main` | production. Every commit is releasable. Releases are tags on this branch. |
+| `main` | production. Every merge from `develop` publishes a new version when it brings a `feat` or a `fix`. |
 | `develop` | integration. Feature branches start here and merge back here. |
 
 1. Branch from `develop`: `git switch -c feat/short-name develop`.
@@ -79,7 +79,7 @@ by hand.
 3. Open a pull request against `develop`. CI must be green: tests on Linux,
    macOS and Windows, lint and the npm package check.
 4. When `develop` is ready to ship, a maintainer opens a pull request from
-   `develop` to `main`, merges it and tags the release.
+   `develop` to `main` and merges it; the release takes care of itself.
 
 Both branches should be protected on GitHub (Settings → Branches → Add rule):
 require a pull request, require the CI status checks to pass, and forbid force
@@ -102,24 +102,27 @@ Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
 
 ## Releases
 
-A release is a tag on `main`:
+There are no tags or version numbers to write by hand: **merging `develop` into
+`main` is the release**. On every push to `main`, the Release workflow runs the
+suite, builds `dist/cli.js` and runs
+[semantic-release](https://semantic-release.gitbook.io), which reads the
+Conventional Commits since the last tag and decides the version:
 
-```sh
-git switch main
-git pull
-git tag -a v1.2.3 -m "v1.2.3"
-git push origin v1.2.3
-```
+| in the commits | version |
+|---|---|
+| `!` or `BREAKING CHANGE` | minor while we are on 0.x (`0.1.3 → 0.2.0`); major from 1.0.0 on |
+| `feat` | minor |
+| `fix`, `perf`, `revert` | patch |
+| only `docs`, `refactor`, `test`, `build`, `ci`, `chore`, `style` | nothing is published |
 
-The Release workflow then:
+With the version decided, it writes it into `package.json` (inside the workflow
+only; git keeps `0.0.0-dev`), publishes `@deadgun15/commitron` to npm with
+provenance, creates the `vX.Y.Z` tag and the GitHub release with notes grouped
+by type, and comments on every included pull request with the version it
+shipped in.
 
-1. installs the dependencies, runs the suite and builds `dist/cli.js`;
-2. sets the tag's version in `package.json` and publishes
-   `@deadgun15/commitron@1.2.3` to npm with provenance. A pre-release tag such
-   as `v1.3.0-rc.1` is published under the npm dist-tag `next` instead of
-   `latest`;
-3. creates the GitHub release with notes generated from the pull requests and
-   attaches the package `.tgz`.
+The "breaking = minor" rule lives in `.releaserc.json` (`releaseRules`). To go
+to 1.0.0, remove it and merge a commit with a `BREAKING CHANGE`.
 
 ### One-time setup for maintainers
 

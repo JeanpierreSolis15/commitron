@@ -216,8 +216,9 @@ already trust with it.
 
 Issues and pull requests are welcome. The short version:
 
-- `main` is production and only moves by release; `develop` is where work lands.
-  Branch from `develop`, open your pull request against `develop`.
+- `main` is production: every merge from `develop` publishes a new version,
+  worked out from the commits. `develop` is where work lands: branch from there
+  and open your pull request against `develop`.
 - Commit messages follow Conventional Commits. commitron writes its own, so
   `commitron` in this repository is the expected workflow.
 - CI runs the suite on Linux, macOS and Windows; `npm test`, `npm run lint` and
