@@ -1,4 +1,3 @@
-# https://goreleaser.com — validated on every push by the CI "goreleaser check" job.
 version: 2
 
 project_name: commitron
@@ -72,28 +71,3 @@ release:
     ```
 
     Or download the binary for your platform above.
-
-# Publishing to a Homebrew tap and a Scoop bucket needs two extra repositories
-# and a PAT that can push to them (the default GITHUB_TOKEN cannot). Create
-# `homebrew-tap` and `scoop-bucket` under the same account, add the token as the
-# TAP_TOKEN secret, and uncomment:
-#
-# brews:
-#   - repository:
-#       owner: JeanpierreSolis15
-#       name: homebrew-tap
-#       token: '{{ .Env.TAP_TOKEN }}'
-#     homepage: https://github.com/JeanpierreSolis15/commitron
-#     description: AI commit messages from your staged diff, via the Claude Code CLI
-#     license: MIT
-#     test: |
-#       system "#{bin}/commitron", "version"
-#
-# scoops:
-#   - repository:
-#       owner: JeanpierreSolis15
-#       name: scoop-bucket
-#       token: '{{ .Env.TAP_TOKEN }}'
-#     homepage: https://github.com/JeanpierreSolis15/commitron
-#     description: AI commit messages from your staged diff, via the Claude Code CLI
-#     license: MIT

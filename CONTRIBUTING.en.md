@@ -128,7 +128,11 @@ The Release workflow then:
   npm username, because the unscoped name `commitron` belongs to another
   account. The installed command is still `commitron` (`bin` in
   `npm/package.json`).
-- **Homebrew and Scoop** are optional and documented in `.goreleaser.yaml`.
+- **Homebrew and Scoop** are not set up. GoReleaser supports them through the
+  `brews` and `scoops` sections of `.goreleaser.yaml`; they need a
+  `homebrew-tap` and a `scoop-bucket` repository under the same account and a
+  PAT with write access to them stored as a secret, because the workflow's
+  `GITHUB_TOKEN` cannot push to other repositories.
 
 ## Reporting problems
 

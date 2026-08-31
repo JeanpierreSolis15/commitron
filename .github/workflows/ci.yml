@@ -34,7 +34,6 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      # The gitx tests drive a real repository, so git needs an identity.
       - name: Configure git
         run: |
           git config --global user.email ci@example.com
@@ -68,8 +67,6 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-      # Validates .goreleaser.yaml on every push, so a broken release config is
-      # caught here instead of when a tag is already pushed.
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'
@@ -97,8 +94,6 @@ jobs:
         working-directory: npm
         run: npm pack --dry-run
 
-      # The launcher must find and run a binary in npm/vendor, which is where
-      # lib/download.js puts the release binary on the first run.
       - name: Run the launcher against a local build
         run: |
           mkdir -p npm/vendor

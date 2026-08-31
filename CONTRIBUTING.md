@@ -130,7 +130,11 @@ El workflow de Release entonces:
   npm del mantenedor, porque el nombre sin scope `commitron` pertenece a otra
   cuenta. El comando instalado sigue siendo `commitron` (`bin` en
   `npm/package.json`).
-- **Homebrew y Scoop** son opcionales y están documentados en `.goreleaser.yaml`.
+- **Homebrew y Scoop** no están configurados. GoReleaser los soporta con las
+  secciones `brews` y `scoops` de `.goreleaser.yaml`; hacen falta un repositorio
+  `homebrew-tap` y otro `scoop-bucket` en la misma cuenta y un PAT con permiso
+  de escritura sobre ellos como secreto, porque el `GITHUB_TOKEN` del workflow no
+  puede escribir en otros repositorios.
 
 ## Reportar problemas
 
