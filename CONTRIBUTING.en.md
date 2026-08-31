@@ -9,22 +9,26 @@ release is cut.
 ## Repository layout
 
 ```
-src/main.ts                 entry point
-src/cli.ts                  flags, subcommands, exit codes
-src/init.ts                 commitron init and commitron config
-src/run.ts                  the commit flow from start to finish
-src/config.ts               settings, defaults, validation
-src/load.ts                 layered config loading
-src/git.ts                  the git commands commitron needs
-src/message.ts              sanitising, parsing and validating the reply
-src/normalize.ts            canonical message shape and body wrapping
-src/prompt.ts               the prompt and its rendering
-src/provider.ts             the Claude Code CLI backend
-src/ui/                     colours, glyphs, spinner, prompts
-test/                       the test suite (vitest)
+src/main.ts                 entry point: wires the adapters and runs the CLI
+src/cli/                    flags, command dispatch, exit codes, error reporting
+src/app/                    use cases (commit, generate, init, config) and their ports
+src/domain/config/          the Config type, defaults, validation, decoding
+src/domain/message/         sanitising, parsing, validating and normalising the message
+src/domain/prompt/          the prompt and its rendering
+src/infra/                  adapters: spawned git, the Claude CLI, files, terminal
+src/ui/                     theme, views, spinner and prompts on top of the terminal
+src/utils/                  text, errors, guards
+test/                       mirrors src/; the fakes live in test/helpers/fakes.ts
 schema.json                 JSON Schema for .commitron.json
 tsup.config.ts              bundles src/ into dist/cli.js
 ```
+
+Layers depend inwards. `domain/` is pure logic and imports nothing from Node;
+`app/` only talks to the outside world through the interfaces in
+`app/ports.ts` (`GitClient`, `Provider`, `Files`, `Environment`, `Presenter`);
+`infra/` and `ui/` implement them; `main.ts` wires them together. That is what
+lets the use cases be tested end to end with fakes, without git, `claude` or a
+terminal.
 
 The code has no runtime dependencies and is written without comments; names and
 small functions carry the meaning. Keep it that way.
@@ -92,9 +96,9 @@ type(scope): description
 ```
 
 Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
-`chore`, `style`, `revert`. The scope is the module touched (`cli`, `config`,
-`git`, `message`, `prompt`, `provider`, `ui`) or `ci`, `docs`, `release`,
-`deps`. `feat` and `fix` commits are what end up in the release notes.
+`chore`, `style`, `revert`. The scope is the layer or module touched (`cli`,
+`app`, `config`, `message`, `prompt`, `git`, `claude`, `terminal`, `ui`) or
+`ci`, `docs`, `release`, `deps`. `feat` and `fix` commits are what end up in the release notes.
 
 ## Releases
 

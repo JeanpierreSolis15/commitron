@@ -9,22 +9,25 @@ cómo se publica una release.
 ## Estructura del repositorio
 
 ```
-src/main.ts                 punto de entrada
-src/cli.ts                  flags, subcomandos, códigos de salida
-src/init.ts                 commitron init y commitron config
-src/run.ts                  el flujo de commit de principio a fin
-src/config.ts               ajustes, valores por defecto, validación
-src/load.ts                 carga de la configuración por capas
-src/git.ts                  los comandos de git que commitron necesita
-src/message.ts              limpieza, parseo y validación de la respuesta
-src/normalize.ts            forma canónica del mensaje y ajuste del cuerpo
-src/prompt.ts               el prompt y su renderizado
-src/provider.ts             el backend de la CLI de Claude Code
-src/ui/                     colores, glifos, spinner, preguntas al usuario
-test/                       la suite de tests (vitest)
+src/main.ts                 punto de entrada: conecta los adaptadores y ejecuta la CLI
+src/cli/                    flags, despacho de comandos, códigos de salida, informe de errores
+src/app/                    casos de uso (commit, generate, init, config) y sus ports
+src/domain/config/          tipo Config, valores por defecto, validación, decodificación
+src/domain/message/         limpieza, parseo, validación y forma canónica del mensaje
+src/domain/prompt/          el prompt y su renderizado
+src/infra/                  adaptadores: git por spawn, CLI de Claude, archivos, terminal
+src/ui/                     tema, vistas, spinner y preguntas sobre la terminal
+src/utils/                  texto, errores, guards
+test/                       espejo de src/; los dobles viven en test/helpers/fakes.ts
 schema.json                 JSON Schema de .commitron.json
 tsup.config.ts              empaquetado de src/ en dist/cli.js
 ```
+
+Las capas dependen hacia dentro. `domain/` es lógica pura y no importa nada de
+Node; `app/` solo habla con el exterior a través de las interfaces de
+`app/ports.ts` (`GitClient`, `Provider`, `Files`, `Environment`, `Presenter`);
+`infra/` y `ui/` las implementan; `main.ts` las conecta. Así los casos de uso se
+prueban de principio a fin con dobles, sin git, sin `claude` y sin terminal.
 
 El código no tiene dependencias en tiempo de ejecución y está escrito sin
 comentarios; los nombres y las funciones pequeñas llevan el significado. Mantenlo
@@ -93,9 +96,9 @@ tipo(scope): descripción
 ```
 
 Tipos: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
-`chore`, `style`, `revert`. El scope es el módulo tocado (`cli`, `config`,
-`git`, `message`, `prompt`, `provider`, `ui`) o `ci`, `docs`, `release`,
-`deps`. Los commits `feat` y `fix` son los que acaban en las notas de la
+`chore`, `style`, `revert`. El scope es la capa o el módulo tocado (`cli`,
+`app`, `config`, `message`, `prompt`, `git`, `claude`, `terminal`, `ui`) o
+`ci`, `docs`, `release`, `deps`. Los commits `feat` y `fix` son los que acaban en las notas de la
 release.
 
 ## Releases
