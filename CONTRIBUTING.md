@@ -119,10 +119,13 @@ El workflow de Release entonces:
 
 ### Configuración inicial para mantenedores
 
-- **Secreto `NPM_TOKEN`.** Crea un token de automatización en npm (npmjs.com →
-  Access Tokens → Granular, con permiso de publicar y "bypass 2FA") y añádelo
-  como secreto del repositorio con el nombre `NPM_TOKEN`. Sin él, el paso de npm
-  se salta con un aviso; la release de GitHub no se ve afectada.
+- **Trusted publisher en npm.** El workflow publica sin ningún token: npm acepta
+  el token OIDC que GitHub emite para `release.yml`. Se configura en npmjs.com →
+  paquete → Settings → Trusted Publisher → GitHub Actions, con el usuario
+  `JeanpierreSolis15`, el repositorio `commitron` y el workflow `release.yml`, y
+  con la acción `npm publish` permitida. En "Publishing access" conviene
+  "Require two-factor authentication and disallow bypass-2FA tokens": no afecta
+  a OIDC y deja tu 2FA como único otro camino para publicar.
 - **Nombre del paquete.** Es `@deadgun15/commitron`: el scope es el usuario de
   npm del mantenedor, porque el nombre sin scope `commitron` pertenece a otra
   cuenta. El comando instalado sigue siendo `commitron` (`bin` en

@@ -11,12 +11,10 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    env:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # goreleaser builds the changelog from history
+          fetch-depth: 0
 
       - uses: actions/setup-go@v5
         with:
@@ -27,33 +25,20 @@ jobs:
           version: '~> v2'
           args: release --clean
         env:
-          # Enough for the release itself. Publishing to a Homebrew tap or a
-          # Scoop bucket needs a PAT with access to that repo, stored as
-          # secrets.TAP_TOKEN and wired up in .goreleaser.yaml.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
-        if: env.NPM_TOKEN != ''
         with:
           node-version: '22'
           registry-url: https://registry.npmjs.org
 
-      # Runs after goreleaser on purpose: the npm package downloads its binary
-      # from the GitHub release, so the assets must already be there.
-      # Needs the NPM_TOKEN repository secret (an npm automation token).
       - name: Publish to npm
-        if: env.NPM_TOKEN != ''
         working-directory: npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          npm install -g npm@latest
           version="${GITHUB_REF_NAME#v}"
           tag=latest
           case "$version" in *-*) tag=next ;; esac
           cp ../README.md ../LICENSE .
           npm version --no-git-tag-version "$version"
-          npm publish --access public --provenance --tag "$tag"
-
-      - name: Report the skipped npm publish
-        if: env.NPM_TOKEN == ''
-        run: echo "::warning::NPM_TOKEN is not set, so this release was not published to npm. Add the secret and re-run this job."
+          npm publish --access public --tag "$tag"
