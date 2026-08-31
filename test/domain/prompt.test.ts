@@ -119,6 +119,16 @@ describe("buildPrompt", () => {
     expect(out).not.toContain("add Polish language");
   });
 
+  it("keeps the configured language above the examples' language", () => {
+    const out = buildPrompt(
+      { ...defaults(), language: "en" },
+      { ...empty, history: ["fix: corrige el cálculo del total"] },
+    );
+    expect(out).toContain("write the\ndescription in English even if they use another language");
+    expect(out.trimEnd().endsWith("wrapped exactly in <commit> and </commit>.")).toBe(true);
+    expect(out).toContain("## Reminder\n- The description is written in English");
+  });
+
   it("falls back to canonical examples", () => {
     const out = buildPrompt(defaults(), empty);
     expect(out).toContain("## Examples");

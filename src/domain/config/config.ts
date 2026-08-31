@@ -18,6 +18,7 @@ export interface Config {
   timeoutSeconds: number;
   retries: number;
   strictMcpConfig: boolean;
+  isolated: boolean;
   extraArgs?: string[];
   language: string;
   types: string[];
@@ -48,6 +49,7 @@ export function defaults(): Config {
     timeoutSeconds: 120,
     retries: 1,
     strictMcpConfig: true,
+    isolated: true,
     language: "en",
     types: [
       "feat",

@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { accessSync, constants, statSync } from "node:fs";
+import { accessSync, constants, mkdirSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { GenerationAbortedError, ProviderMissingError } from "../../app/errors";
 import type { Environment, GenerationRequest, Provider } from "../../app/ports";
@@ -9,20 +10,53 @@ interface Executable {
   shell: boolean;
 }
 
+const isolationArgs = ["--tools", "", "--setting-sources", "", "--no-session-persistence"];
+
+const flagsWithValue = new Set(["--model", "--fallback-model", "--tools", "--setting-sources"]);
+
+const unknownOptionRe = /unknown option '([^']+)'/i;
+
+class UnsupportedFlagError extends Error {
+  constructor(readonly flag: string) {
+    super(`claude does not support ${flag}`);
+  }
+}
+
 export class ClaudeProvider implements Provider {
   constructor(private readonly environment: Environment) {}
 
-  generate(request: GenerationRequest, signal: AbortSignal): Promise<string> {
+  async generate(request: GenerationRequest, signal: AbortSignal): Promise<string> {
     const executable = lookPath("claude", this.environment);
     if (!executable) {
-      return Promise.reject(new ProviderMissingError());
+      throw new ProviderMissingError();
     }
+    const cwd = request.isolated ? neutralDirectory() : undefined;
+    let args = claudeArgs(request);
+    for (;;) {
+      try {
+        return await this.run(executable, args, cwd, request, signal);
+      } catch (err) {
+        if (!(err instanceof UnsupportedFlagError) || !args.includes(err.flag)) {
+          throw err;
+        }
+        args = withoutFlag(args, err.flag);
+      }
+    }
+  }
+
+  private run(
+    executable: Executable,
+    args: string[],
+    cwd: string | undefined,
+    request: GenerationRequest,
+    signal: AbortSignal,
+  ): Promise<string> {
     const { platform } = this.environment;
     const { timeoutSeconds } = request;
 
     return new Promise((resolve, reject) => {
-      const [file, args, shell] = command(executable, claudeArgs(request));
-      const child = spawn(file, args, { shell, windowsHide: true });
+      const [file, argv, shell] = command(executable, args);
+      const child = spawn(file, argv, { cwd, shell, windowsHide: true });
       let stdout = "";
       let stderr = "";
       let timedOut = false;
@@ -47,14 +81,17 @@ export class ClaudeProvider implements Provider {
       });
       child.on("close", (code) => {
         cleanup();
+        const detail = stderr.trim();
+        const unsupported = unknownOptionRe.exec(detail)?.[1];
         if (timedOut) {
           reject(new Error(`no reply after ${timeoutSeconds}s`));
         } else if (signal.aborted) {
           reject(new GenerationAbortedError());
         } else if (code === 0) {
           resolve(stdout);
+        } else if (unsupported) {
+          reject(new UnsupportedFlagError(unsupported));
         } else {
-          const detail = stderr.trim();
           reject(new Error(detail ? `claude: ${detail}` : `claude: exit status ${code}`));
         }
       });
@@ -73,18 +110,36 @@ export function claudeArgs(
   if (request.strictMcpConfig) {
     args.push("--strict-mcp-config");
   }
+  if (request.isolated) {
+    args.push(...isolationArgs);
+  }
   return [...args, ...request.extraArgs];
+}
+
+export function withoutFlag(args: string[], flag: string): string[] {
+  const index = args.indexOf(flag);
+  if (index === -1) {
+    return args;
+  }
+  const width = flagsWithValue.has(flag) ? 2 : 1;
+  return [...args.slice(0, index), ...args.slice(index + width)];
+}
+
+export function quoteForShell(arg: string): string {
+  return arg === "" || /\s/.test(arg) ? `"${arg}"` : arg;
+}
+
+function neutralDirectory(): string {
+  const dir = path.join(tmpdir(), "commitron-claude");
+  mkdirSync(dir, { recursive: true });
+  return dir;
 }
 
 function command(executable: Executable, args: string[]): [string, string[], boolean] {
   if (!executable.shell) {
     return [executable.file, args, false];
   }
-  return [quote(executable.file), args.map(quote), true];
-}
-
-function quote(arg: string): string {
-  return /\s/.test(arg) ? `"${arg}"` : arg;
+  return [quoteForShell(executable.file), args.map(quoteForShell), true];
 }
 
 function kill(child: ChildProcess, platform: string): void {

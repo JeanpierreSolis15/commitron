@@ -7,6 +7,7 @@ export const keyOrder: ConfigKey[] = [
   "timeoutSeconds",
   "retries",
   "strictMcpConfig",
+  "isolated",
   "extraArgs",
   "language",
   "types",

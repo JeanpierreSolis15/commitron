@@ -69,6 +69,7 @@ describe("generateMessage", () => {
       model: "opus",
       fallbackModel: "haiku",
       strictMcpConfig: true,
+      isolated: true,
       timeoutSeconds: 30,
     });
     expect(w.provider.requests[0]?.prompt).toContain(w.git.diff.trim());
