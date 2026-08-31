@@ -3,6 +3,7 @@ package prompt
 import (
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/JeanpierreSolis15/commitron/internal/config"
 )
@@ -109,5 +110,89 @@ func TestBuildWithoutInstructionsHasNoEmptySection(t *testing.T) {
 	}
 	if strings.Contains(out, "Project conventions") {
 		t.Error("no instructions means no section header")
+	}
+}
+
+func TestBuildIncludesCaseAndWrapRules(t *testing.T) {
+	out, err := Build(config.Defaults(), Input{Diff: "d"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"Start the description with a lowercase letter",
+		"The scope, when there is one, is lowercase",
+		"Wrap every body line at 100 characters",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("prompt is missing %q", want)
+		}
+	}
+}
+
+func TestBuildOmitsRelaxedRules(t *testing.T) {
+	cfg := config.Defaults()
+	cfg.SubjectCase = "any"
+	cfg.ScopeCase = "any"
+	cfg.BodyMaxLineLength = 0
+
+	out, err := Build(cfg, Input{Diff: "d"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, unwanted := range []string{
+		"Start the description with a lowercase letter",
+		"The scope, when there is one, is lowercase",
+		"Wrap every body line",
+	} {
+		if strings.Contains(out, unwanted) {
+			t.Errorf("a relaxed config should not produce %q", unwanted)
+		}
+	}
+}
+
+func TestTruncate(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		max  int
+		want string
+		cut  bool
+	}{
+		{"fits exactly", "abc", 3, "abc", false},
+		{"cuts ascii", "abcdef", 3, "abc", true},
+		{"zero means no limit", "abcdef", 0, "abcdef", false},
+		{"empty", "", 3, "", false},
+		{"counts characters, not bytes", "ééééé", 3, "ééé", true},
+		{"multi-byte that fits by characters but not by bytes", "ééé", 3, "ééé", false},
+		{"never splits a character", "aé", 2, "aé", false},
+		{"cuts before a multi-byte character", "aéb", 1, "a", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, cut := Truncate(tt.in, tt.max)
+			if got != tt.want || cut != tt.cut {
+				t.Errorf("Truncate(%q, %d) = %q, %v; want %q, %v", tt.in, tt.max, got, cut, tt.want, tt.cut)
+			}
+			if !utf8.ValidString(got) {
+				t.Errorf("Truncate(%q, %d) produced invalid UTF-8", tt.in, tt.max)
+			}
+		})
+	}
+}
+
+func TestBuildTruncatesTheDiffByCharacter(t *testing.T) {
+	cfg := config.Defaults()
+	cfg.MaxDiffChars = 1000
+	long := strings.Repeat("ñ", 5000)
+
+	out, err := Build(cfg, Input{Diff: long}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !utf8.ValidString(out) {
+		t.Fatal("the prompt contains a half-cut character")
+	}
+	if n := strings.Count(out, "ñ"); n != 1000 {
+		t.Errorf("diff was not cut to 1000 characters, got %d", n)
 	}
 }

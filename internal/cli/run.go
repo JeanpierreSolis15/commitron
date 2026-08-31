@@ -254,9 +254,8 @@ func loadInstructions(root string, cfg config.Config) (text, warning string) {
 	if err != nil {
 		return "", fmt.Sprintf("instructions file not found: %s", cfg.Instructions)
 	}
-	text = strings.TrimSpace(string(data))
-	if cfg.InstructionsMaxChars > 0 && len(text) > cfg.InstructionsMaxChars {
-		text = text[:cfg.InstructionsMaxChars]
+	text, truncated := prompt.Truncate(strings.TrimSpace(string(data)), cfg.InstructionsMaxChars)
+	if truncated {
 		warning = fmt.Sprintf("instructions truncated to %d characters", cfg.InstructionsMaxChars)
 	}
 	return text, warning

@@ -54,25 +54,43 @@ func LanguageName(code string) string {
 	return code
 }
 
+// Truncate cuts s to at most max characters. It counts characters rather than
+// bytes, so a diff full of accents gets the budget the config promises and a
+// multi-byte character is never left half-cut. A max of zero or less means no
+// limit. The second result reports whether anything was removed.
+func Truncate(s string, max int) (string, bool) {
+	// A string of max bytes has at most max characters, so this fast path is exact.
+	if max <= 0 || len(s) <= max {
+		return s, false
+	}
+	n := 0
+	for i := range s { // i is the byte offset where each character starts
+		if n == max {
+			return s[:i], true
+		}
+		n++
+	}
+	return s, false
+}
+
 // Build renders the prompt, truncating the diff to the configured budget.
 func Build(cfg config.Config, in Input, instructions string) (string, error) {
-	diff := in.Diff
-	truncated := len(diff) > cfg.MaxDiffChars
-	if truncated {
-		diff = diff[:cfg.MaxDiffChars]
-	}
+	diff, truncated := Truncate(in.Diff, cfg.MaxDiffChars)
 
 	v := view{
-		Types:            strings.Join(cfg.Types, ", "),
-		Language:         LanguageName(cfg.Language),
-		SubjectMaxLength: cfg.SubjectMaxLength,
-		Body:             cfg.Body,
-		Instructions:     instructions,
-		Stat:             strings.TrimRight(in.Stat, "\n"),
-		Diff:             diff,
-		Excluded:         strings.Join(in.Excluded, ", "),
-		Truncated:        truncated,
-		MaxDiffChars:     cfg.MaxDiffChars,
+		Types:             strings.Join(cfg.Types, ", "),
+		Language:          LanguageName(cfg.Language),
+		SubjectMaxLength:  cfg.SubjectMaxLength,
+		SubjectLower:      cfg.SubjectCase == "lower",
+		ScopeLower:        cfg.ScopeCase == "lower",
+		Body:              cfg.Body,
+		BodyMaxLineLength: cfg.BodyMaxLineLength,
+		Instructions:      instructions,
+		Stat:              strings.TrimRight(in.Stat, "\n"),
+		Diff:              diff,
+		Excluded:          strings.Join(in.Excluded, ", "),
+		Truncated:         truncated,
+		MaxDiffChars:      cfg.MaxDiffChars,
 	}
 
 	var sb strings.Builder
