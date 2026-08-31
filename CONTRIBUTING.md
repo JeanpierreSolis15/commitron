@@ -1,33 +1,35 @@
-# Contributing to commitron
+# Contribuir a commitron
 
-Thank you for taking the time. This guide covers how the repository is laid out,
-how to run everything locally, how changes flow through the branches and how a
-release is cut.
+Español · [English](CONTRIBUTING.en.md)
 
-## Repository layout
+Gracias por dedicarle tiempo. Esta guía explica cómo está organizado el
+repositorio, cómo ejecutar todo en local, cómo fluyen los cambios entre ramas y
+cómo se publica una release.
+
+## Estructura del repositorio
 
 ```
-main.go                     entry point
-internal/cli                flags, subcommands, exit codes
-internal/config             settings, defaults, layered loading, validation
-internal/gitx               the git commands commitron needs
-internal/message            sanitising, parsing and validating the reply
-internal/prompt             the prompt template and its rendering
-internal/provider           the Claude Code CLI backend
-internal/ui                 colours, glyphs, spinner, prompts
-npm/                        the npm package: a launcher that downloads the binary
-schema.json                 JSON Schema for .commitron.json
-install.sh, install.ps1     one-line installers for the release binaries
-.goreleaser.yaml            release build matrix and archives
+main.go                     punto de entrada
+internal/cli                flags, subcomandos, códigos de salida
+internal/config             ajustes, valores por defecto, carga por capas, validación
+internal/gitx               los comandos de git que commitron necesita
+internal/message            limpieza, parseo y validación de la respuesta
+internal/prompt             la plantilla del prompt y su renderizado
+internal/provider           el backend de la CLI de Claude Code
+internal/ui                 colores, glifos, spinner, preguntas al usuario
+npm/                        el paquete npm: un lanzador que descarga el binario
+schema.json                 JSON Schema de .commitron.json
+install.sh, install.ps1     instaladores de una línea para los binarios de la release
+.goreleaser.yaml            matriz de compilación y archivos de la release
 ```
 
-Go code has no third-party dependencies and is written without comments; names
-and small functions carry the meaning. Keep it that way.
+El código Go no tiene dependencias de terceros y está escrito sin comentarios;
+los nombres y las funciones pequeñas llevan el significado. Mantenlo así.
 
-## Running things locally
+## Ejecutar todo en local
 
-You need Go 1.23 or newer and git. The Claude Code CLI is only needed to run
-commitron end to end; the test suite does not call it.
+Necesitas Go 1.23 o superior y git. La CLI de Claude Code solo hace falta para
+ejecutar commitron de principio a fin; la suite de tests no la llama.
 
 ```sh
 go build ./...
@@ -36,7 +38,7 @@ gofmt -l .
 go test ./... -count=1
 ```
 
-To try a change for real, build and run it against this repository:
+Para probar un cambio de verdad, compílalo y ejecútalo contra este repositorio:
 
 ```sh
 go build -o commitron .
@@ -44,58 +46,60 @@ git add -p
 ./commitron --dry-run
 ```
 
-### The npm package
+### El paquete npm
 
-`npm/` holds a small Node launcher. `install.js` runs on `npm install`, downloads
-the release binary for the current platform from GitHub and checks it against
-`checksums.txt`; `bin/commitron.js` then runs it. To exercise the launcher
-without a release, put a local build where the installer would:
+`npm/` contiene un pequeño lanzador en Node. `install.js` se ejecuta en
+`npm install`, descarga desde GitHub el binario de la release para la plataforma
+actual y lo comprueba contra `checksums.txt`; después `bin/commitron.js` lo
+ejecuta. Para probar el lanzador sin una release, deja un build local donde lo
+pondría el instalador:
 
 ```sh
 mkdir -p npm/vendor
-go build -o npm/vendor/commitron .        # commitron.exe on Windows
-node npm/bin/commitron.js version         # prints: dev
+go build -o npm/vendor/commitron .        # commitron.exe en Windows
+node npm/bin/commitron.js version         # imprime: dev
 ```
 
-`npm/package.json` keeps the version `0.0.0-dev`; the release workflow sets the
-real one from the tag. Do not bump it by hand.
+`npm/package.json` mantiene la versión `0.0.0-dev`; el workflow de release pone
+la real a partir del tag. No la cambies a mano.
 
-## Branches
+## Ramas
 
-| branch | role |
+| rama | papel |
 |---|---|
-| `main` | production. Every commit is releasable. Releases are tags on this branch. |
-| `develop` | integration. Feature branches start here and merge back here. |
+| `main` | producción. Cada commit es publicable. Las releases son tags sobre esta rama. |
+| `develop` | integración. Las ramas de trabajo nacen aquí y vuelven a fusionarse aquí. |
 
-1. Branch from `develop`: `git switch -c feat/short-name develop`.
-2. Commit with Conventional Commits. Use commitron itself.
-3. Open a pull request against `develop`. CI must be green: tests on Linux,
-   macOS and Windows, `gofmt`, `goreleaser check` and the npm package check.
-4. When `develop` is ready to ship, a maintainer opens a pull request from
-   `develop` to `main`, merges it and tags the release.
+1. Crea tu rama desde `develop`: `git switch -c feat/nombre-corto develop`.
+2. Commitea con Conventional Commits. Usa el propio commitron.
+3. Abre un pull request contra `develop`. CI debe estar en verde: tests en Linux,
+   macOS y Windows, `gofmt`, `goreleaser check` y la comprobación del paquete npm.
+4. Cuando `develop` esté listo para salir, un mantenedor abre un pull request de
+   `develop` a `main`, lo fusiona y etiqueta la release.
 
-Both branches should be protected on GitHub (Settings → Branches → Add rule):
-require a pull request, require the CI status checks to pass, and forbid force
-pushes. `main` additionally should only receive merges from `develop`.
+Ambas ramas deberían estar protegidas en GitHub (Settings → Branches → Add rule):
+exigir pull request, exigir que pasen los checks de CI y prohibir los force push.
+`main`, además, solo debería recibir merges desde `develop`.
 
-## Commit messages
+## Mensajes de commit
 
-Conventional Commits, as commitron produces them:
+Conventional Commits, tal como los produce commitron:
 
 ```
-type(scope): description
+tipo(scope): descripción
 
-- optional bullet body
+- cuerpo opcional en viñetas
 ```
 
-Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
-`chore`, `style`, `revert`. The scope is the package touched (`cli`, `config`,
-`gitx`, `message`, `prompt`, `provider`, `ui`, `npm`) or `ci`, `docs`,
-`release`. `feat` and `fix` commits are what end up in the release notes.
+Tipos: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`,
+`chore`, `style`, `revert`. El scope es el paquete tocado (`cli`, `config`,
+`gitx`, `message`, `prompt`, `provider`, `ui`, `npm`) o `ci`, `docs`,
+`release`. Los commits `feat` y `fix` son los que acaban en las notas de la
+release.
 
 ## Releases
 
-A release is a tag on `main`:
+Una release es un tag sobre `main`:
 
 ```sh
 git switch main
@@ -104,35 +108,36 @@ git tag -a v1.2.3 -m "v1.2.3"
 git push origin v1.2.3
 ```
 
-The Release workflow then:
+El workflow de Release entonces:
 
-1. builds the binaries for Linux, macOS and Windows on amd64 and arm64;
-2. uploads the archives, the bare binaries and `checksums.txt` to a GitHub
-   release with a changelog grouped by type;
-3. publishes `commitron@1.2.3` to npm with provenance. A pre-release tag such as
-   `v1.3.0-rc.1` is published under the npm dist-tag `next` instead of `latest`.
+1. compila los binarios para Linux, macOS y Windows en amd64 y arm64;
+2. sube los archivos, los binarios sueltos y `checksums.txt` a una release de
+   GitHub con un changelog agrupado por tipo;
+3. publica `commitron@1.2.3` en npm con provenance. Un tag de pre-release como
+   `v1.3.0-rc.1` se publica bajo el dist-tag `next` en lugar de `latest`.
 
-### One-time setup for maintainers
+### Configuración inicial para mantenedores
 
-- **`NPM_TOKEN` secret.** Create an npm automation token (npmjs.com → Access
-  Tokens → Granular, with publish rights and 2FA bypass for automation) and add
-  it as a repository secret named `NPM_TOKEN`. Without it the npm step fails,
-  the GitHub release itself is unaffected.
-- **Package name.** It is the `name` in `npm/package.json`. If the registry
-  refuses the unscoped name, switch to a scoped one such as
-  `@jeanpierresolis15/commitron`; nothing else needs to change.
-- **Homebrew and Scoop** are optional and documented in `.goreleaser.yaml`.
-- **Badges.** The release and npm badges only render once something is published,
-  so they are not in the READMEs yet. After the first release, add these two under
-  the CI badge in `README.md` and `README.en.md`:
+- **Secreto `NPM_TOKEN`.** Crea un token de automatización en npm (npmjs.com →
+  Access Tokens → Granular, con permiso de publicar y "bypass 2FA") y añádelo
+  como secreto del repositorio con el nombre `NPM_TOKEN`. Sin él, el paso de npm
+  se salta con un aviso; la release de GitHub no se ve afectada.
+- **Nombre del paquete.** Es el `name` de `npm/package.json`. Si el registro
+  rechaza el nombre sin scope, cambia a uno con scope como
+  `@jeanpierresolis15/commitron`; nada más tiene que cambiar.
+- **Homebrew y Scoop** son opcionales y están documentados en `.goreleaser.yaml`.
+- **Badges.** Los badges de release y npm solo se renderizan cuando hay algo
+  publicado, así que aún no están en los README. Tras la primera publicación,
+  añade estas dos líneas bajo el badge de CI en `README.md` y `README.en.md`:
 
   ```markdown
   [![Release](https://img.shields.io/github/v/release/JeanpierreSolis15/commitron?sort=semver)](https://github.com/JeanpierreSolis15/commitron/releases)
   [![npm](https://img.shields.io/npm/v/commitron)](https://www.npmjs.com/package/commitron)
   ```
 
-## Reporting problems
+## Reportar problemas
 
-Open an issue with the commitron version (`commitron version`), your OS, the
-command you ran and what you expected. `commitron --dry-run` output and your
-`.commitron.json` help a lot. Never paste a diff you cannot share.
+Abre un issue con la versión de commitron (`commitron version`), tu sistema
+operativo, el comando que ejecutaste y qué esperabas. La salida de
+`commitron --dry-run` y tu `.commitron.json` ayudan mucho. Nunca pegues un diff
+que no puedas compartir.

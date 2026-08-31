@@ -225,8 +225,8 @@ Issues and pull requests are welcome. The short version:
 - CI runs the suite on Linux, macOS and Windows; `go test ./...` and `gofmt -l .`
   must be clean before a merge.
 
-[CONTRIBUTING.md](CONTRIBUTING.md) has the full guide: repository layout, how to
-run everything locally, the branch model and how a release is cut.
+[CONTRIBUTING.en.md](CONTRIBUTING.en.md) has the full guide: repository layout,
+how to run everything locally, the branch model and how a release is cut.
 
 ## License
 

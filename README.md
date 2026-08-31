@@ -228,8 +228,8 @@ Los issues y pull requests son bienvenidos. La versión corta:
 - CI ejecuta la suite en Linux, macOS y Windows; `go test ./...` y `gofmt -l .`
   deben estar limpios antes de un merge.
 
-[CONTRIBUTING.md](CONTRIBUTING.md) (en inglés) tiene la guía completa: estructura
-del repositorio, cómo ejecutar todo en local, el modelo de ramas y cómo se publica
+[CONTRIBUTING.md](CONTRIBUTING.md) tiene la guía completa: estructura del
+repositorio, cómo ejecutar todo en local, el modelo de ramas y cómo se publica
 una release.
 
 ## Licencia
