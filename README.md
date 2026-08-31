@@ -3,7 +3,7 @@
 [![CI](https://github.com/JeanpierreSolis15/commitron/actions/workflows/ci.yml/badge.svg)](https://github.com/JeanpierreSolis15/commitron/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/JeanpierreSolis15/commitron?sort=semver)](https://github.com/JeanpierreSolis15/commitron/releases)
 [![npm](https://img.shields.io/npm/v/%40deadgun15%2Fcommitron)](https://www.npmjs.com/package/@deadgun15/commitron)
-[![Go](https://img.shields.io/github/go-mod/go-version/JeanpierreSolis15/commitron)](go.mod)
+[![Node](https://img.shields.io/node/v/%40deadgun15%2Fcommitron)](package.json)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Español · [English](README.en.md)
@@ -19,15 +19,16 @@ sin pagar dos veces: si `claude` funciona en tu máquina, esto también.
 - **Conventional Commits de serie.** Los valores por defecto replican
   `@commitlint/config-conventional`, así que el mensaje pasa tu hook de commitlint
   tal cual.
-- **Conoce tu proyecto.** Apúntalo a un `CONTRIBUTING.md` y sus reglas prevalecen
-  sobre las genéricas.
-- **Cualquier lenguaje, cualquier repositorio.** Un único binario estático sin
-  dependencias en tiempo de ejecución. Lee `git`, no `package.json`.
+- **Conoce tu proyecto.** Aprende de tus últimos commits, y tus reglas, scopes y
+  ejemplos en `.commitron.json` prevalecen sobre las genéricas.
+- **Cualquier lenguaje, cualquier repositorio.** Solo necesita Node y no arrastra
+  ninguna dependencia. Lee `git`, no `package.json`.
 - **Tus palabras, tu decisión.** Te muestra el mensaje y tú confirmas, editas o
   cancelas. Nada se commitea a tus espaldas.
 
 ## Requisitos
 
+- [Node.js](https://nodejs.org) 20 o superior
 - [git](https://git-scm.com)
 - la [CLI de Claude Code](https://claude.com/claude-code) en tu PATH y con sesión
   iniciada. commitron ejecuta `claude -p` por debajo, así que usa la suscripción
@@ -35,12 +36,9 @@ sin pagar dos veces: si `claude` funciona en tu máquina, esto también.
 
 ## Instalación
 
-### npm
-
-Funciona en macOS, Linux y Windows con Node 18 o superior. La primera vez que lo
-ejecutas descarga el binario de tu plataforma desde la release de GitHub y
-verifica su checksum. No usa scripts de instalación, así que funciona igual con
-npm 12 y con `--ignore-scripts`.
+Funciona en macOS, Linux y Windows. Es JavaScript puro: no descarga binarios ni
+ejecuta scripts de instalación, así que funciona igual con `--ignore-scripts` y
+en Windows con Smart App Control activado.
 
 ```sh
 npm install -g @deadgun15/commitron
@@ -68,29 +66,13 @@ El comando instalado se llama `commitron` en los tres casos.
 }
 ```
 
-### macOS / Linux
+### Si vienes de 0.1.x
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/JeanpierreSolis15/commitron/main/install.sh | sh
-```
-
-### Windows
-
-```powershell
-irm https://raw.githubusercontent.com/JeanpierreSolis15/commitron/main/install.ps1 | iex
-```
-
-### Go
-
-```sh
-go install github.com/JeanpierreSolis15/commitron@latest
-```
-
-### Binarios
-
-Cada release incluye binarios para Linux, macOS y Windows en amd64 y arm64, con
-su `checksums.txt`, en la
-[página de releases](https://github.com/JeanpierreSolis15/commitron/releases).
+Hasta la 0.1.3 commitron era un binario compilado en Go. Si lo instalaste con
+`install.sh`, `install.ps1` o `go install`, ese binario sigue en tu PATH y no se
+actualiza solo: bórralo (`~/.local/bin/commitron`, `/usr/local/bin/commitron` o
+`%LOCALAPPDATA%\Programs\commitron`) e instala con npm. Tu `.commitron.json`
+vale tal cual.
 
 ## Uso
 
@@ -146,9 +128,9 @@ puedes escribirlo tú:
   "$schema": "https://raw.githubusercontent.com/JeanpierreSolis15/commitron/main/schema.json",
   "model": "sonnet",
   "language": "es",
-  "subjectMaxLength": 72,
-  "exclude": ["pnpm-lock.yaml"],
-  "instructions": "CONTRIBUTING.md"
+  "scopes": ["api", "web", "infra"],
+  "guidelines": ["Prefix the description with the Jira ticket from the branch name, e.g. ABC-123"],
+  "exclude": ["pnpm-lock.yaml"]
 }
 ```
 
@@ -171,9 +153,19 @@ error, no un fallo silencioso. Un proyecto JavaScript puede tenerlo todo en
 - **`language`** — idioma de la descripción (`en`, `es`, o un nombre completo
   como `"Brazilian Portuguese"`). El tipo de Conventional Commits se mantiene en
   inglés.
-- **`instructions`** — un archivo Markdown con las convenciones de tu proyecto.
-  Su contenido prevalece sobre las reglas genéricas, y es lo que hace útil a
-  commitron en un repositorio cuyas reglas no conoce.
+- **`guidelines`** — tus reglas en texto, una por entrada: "usa el ticket de la
+  rama como prefijo", "nunca menciones archivos en el asunto". Van al prompt por
+  encima de las reglas genéricas, y es lo que hace útil a commitron en un
+  repositorio con convenciones propias.
+- **`scopes`** — los scopes permitidos, como `scope-enum` de commitlint. Vacío
+  significa cualquiera; si lo defines, una respuesta con otro scope se rechaza
+  (una sin scope sigue valiendo).
+- **`examples`** y **`history`** — mensajes de tu proyecto que el modelo debe
+  imitar. `examples` los escribes tú; `history` (10 por defecto) toma los últimos
+  commits del repositorio. Las reglas mandan cuando el historial las contradice;
+  `"history": 0` lo apaga.
+- **`instructions`** — opcional: la ruta a un Markdown que ya tengas con las
+  convenciones, como `CONTRIBUTING.md`, para no duplicarlas en el JSON.
 - **`exclude`** — pathspecs de git que se dejan fuera del diff. Los lockfiles se
   excluyen por defecto: un `pnpm-lock.yaml` puede tener 10.000 líneas y dejaría
   tu cambio real fuera del presupuesto del modelo. Esos archivos siguen apareciendo
@@ -213,15 +205,15 @@ es que no le quede nada de lo que quejarse.
 
 ## Cómo funciona
 
-1. lee `git diff --cached`, sin las rutas excluidas
-2. renderiza un prompt desde una plantilla con tu configuración y tus convenciones
+1. lee `git diff --cached`, sin las rutas excluidas, y tus últimos commits
+2. renderiza un prompt con tu configuración, tus convenciones y esos ejemplos
 3. se lo pasa por pipe a `claude -p --model <model> --strict-mcp-config`
 4. desenvuelve, parsea y valida la respuesta
 5. lo muestra y commitea con `git commit -F`
 
-Nunca se lanza un shell, así que un timeout mata el proceso real y no hay nada
-que entrecomillar ni escapar. El diff no sale de tu máquina por ningún camino que
-no sea la CLI de Claude Code en la que ya confías.
+`claude` se ejecuta como proceso hijo directo, así que un timeout mata el proceso
+real. El diff no sale de tu máquina por ningún camino que no sea la CLI de Claude
+Code en la que ya confías.
 
 ## Contribuir
 
@@ -231,8 +223,8 @@ Los issues y pull requests son bienvenidos. La versión corta:
   el trabajo. Crea tu rama desde `develop` y abre el pull request contra `develop`.
 - Los mensajes de commit siguen Conventional Commits. commitron escribe los suyos,
   así que usar `commitron` en este repositorio es el flujo esperado.
-- CI ejecuta la suite en Linux, macOS y Windows; `go test ./...` y `gofmt -l .`
-  deben estar limpios antes de un merge.
+- CI ejecuta la suite en Linux, macOS y Windows; `npm test`, `npm run lint` y
+  `npm run format:check` deben estar limpios antes de un merge.
 
 [CONTRIBUTING.md](CONTRIBUTING.md) tiene la guía completa: estructura del
 repositorio, cómo ejecutar todo en local, el modelo de ramas y cómo se publica
